@@ -1,0 +1,8 @@
+# .gitignore
+.env
+.venv
+samples/
+output/
+__pycache__/
+*.pyc
+.DS_Store
