@@ -1,3 +1,5 @@
+"""Prompt constants used by the extraction model; edit here to change model instructions."""
+
 FIELDS = [
     "deceased_full_name", "date_of_birth", "date_of_death",
     "ssn_last4",

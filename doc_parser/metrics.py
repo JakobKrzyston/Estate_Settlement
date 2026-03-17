@@ -1,3 +1,5 @@
+"""Cost projection and per-trial result logging for extraction runs."""
+
 import json
 from datetime import date
 from pathlib import Path

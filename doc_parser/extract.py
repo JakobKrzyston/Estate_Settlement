@@ -1,3 +1,5 @@
+"""Extraction pipeline: parse death certificate PDFs/images into structured JSON via Anthropic vision API."""
+
 import base64
 import json
 import time
