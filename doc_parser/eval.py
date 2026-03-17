@@ -236,6 +236,8 @@ if __name__ == "__main__":
 
     trial_files = []
     scores = []
+    field_hits: dict[str, int] = {}
+    field_totals: dict[str, int] = {}
 
     for filename, truth in GROUND_TRUTH.items():
         pdf_path = samples_dir / filename
@@ -260,6 +262,11 @@ if __name__ == "__main__":
             }
             for f in fields
         }
+
+        for f, r in field_results.items():
+            field_totals[f] = field_totals.get(f, 0) + 1
+            if r["match"]:
+                field_hits[f] = field_hits.get(f, 0) + 1
 
         cost = metrics.projected_cost(m["model"], m["input_tokens"], m["output_tokens"])
 
@@ -288,6 +295,14 @@ if __name__ == "__main__":
         overall = sum(scores) / len(scores)
         print(f"\nOverall: {overall:.0%}  ({len(scores)} files)")
 
+        print(f"\nField-level accuracy:")
+        print(f"  {'Field':<25}  {'Correct':>7}  {'Total':>5}  {'Accuracy':>8}")
+        print(f"  {'-'*25}  {'-'*7}  {'-'*5}  {'-'*8}")
+        for field in sorted(field_totals, key=lambda f: field_hits.get(f, 0) / field_totals[f]):
+            h = field_hits.get(field, 0)
+            t = field_totals[field]
+            print(f"  {field:<25}  {h:>7}  {t:>5}  {h/t:>7.0%}")
+
         total_input   = sum(f["input_tokens"]      for f in trial_files)
         total_output  = sum(f["output_tokens"]     for f in trial_files)
         total_cost    = sum(f["projected_cost_usd"] for f in trial_files)
@@ -309,6 +324,10 @@ if __name__ == "__main__":
                 "total_input_tokens": total_input,
                 "total_output_tokens": total_output,
                 "projected_cost_usd": round(total_cost, 8),
+                "field_accuracy": {
+                    f: round(field_hits.get(f, 0) / field_totals[f], 6)
+                    for f in field_totals
+                },
             },
         }
 
