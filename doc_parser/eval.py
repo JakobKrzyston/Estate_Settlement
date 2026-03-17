@@ -1,46 +1,213 @@
 """Evaluation harness: runs extraction on sample PDFs and scores results against ground_truth.json."""
 
+import json
 import uuid
 from datetime import datetime
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Ground truth
-# ---------------------------------------------------------------------------
-# Keys match Path(image_path).name as passed to parse_certificate().
-# Only fields extractable from the TX mail application form are included;
-# cause_of_death and surviving_spouse are absent from that form and therefore
-# omitted here so they don't unfairly penalise the score.
+_SAMPLES_DIR = Path(__file__).parent.parent / "samples"
+_GT_PATH = _SAMPLES_DIR / "ground_truth.json"
 
-GROUND_TRUTH = {
-    "TX_Thornton.pdf": {
-        "deceased_full_name": "Robert James Thornton",
-        "date_of_birth": "1941-07-22",
-        "date_of_death": "2026-03-14",
-        "ssn_last4": "2310",
-        "county": "Harris",
-        "state": "TX",
-        "filer_relationship": "Child",
-    },
-    "TX_Reyes.pdf": {
-        "deceased_full_name": "Maria Elena Reyes",
-        "date_of_birth": "1958-03-15",
-        "date_of_death": "2023-11-02",
-        "ssn_last4": "8821",
-        "county": "Bexar",
-        "state": "TX",
-        "filer_relationship": "Spouse",
-    },
-    "TX_Whitfield.pdf": {
-        "deceased_full_name": "Kevin Dale Whitfield",
-        "date_of_birth": "1985-09-04",
-        "date_of_death": "2022-06-28",
-        "ssn_last4": "4401",
-        "county": "Dallas",
-        "state": "TX",
-        "filer_relationship": "Parent",
-    },
+
+# ---------------------------------------------------------------------------
+# Date conversion helpers
+# ---------------------------------------------------------------------------
+
+def _date_slash_to_iso(value: str) -> str:
+    """Convert MM/DD/YYYY to YYYY-MM-DD.
+
+    Args:
+        value: Date string in MM/DD/YYYY format.
+
+    Returns:
+        ISO-format date string YYYY-MM-DD.
+    """
+    return datetime.strptime(value, "%m/%d/%Y").strftime("%Y-%m-%d")
+
+
+def _date_long_to_iso(value: str) -> str:
+    """Convert 'Month D, YYYY' to YYYY-MM-DD.
+
+    Args:
+        value: Date string such as 'March 3, 1952'.
+
+    Returns:
+        ISO-format date string YYYY-MM-DD.
+    """
+    return datetime.strptime(value, "%B %d, %Y").strftime("%Y-%m-%d")
+
+
+# ---------------------------------------------------------------------------
+# Per-template projection functions
+# ---------------------------------------------------------------------------
+
+def _project_texas_mail_application(example: dict) -> dict:
+    """Project a texas_mail_application entry to flat CertificateData fields.
+
+    cause_of_death and surviving_spouse are excluded — they do not appear on
+    this form type and omitting them avoids unfair scoring penalties.
+
+    Args:
+        example: One entry from the template's 'examples' list.
+
+    Returns:
+        Dict of flat fields comparable to CertificateData output.
+    """
+    d = example["decedent"]
+    a = example["applicant"]
+    return {
+        "deceased_full_name": f"{d['first_name']} {d['middle_name']} {d['last_name']}",
+        "date_of_birth": _date_slash_to_iso(d["date_of_birth"]),
+        "date_of_death": _date_slash_to_iso(d["date_of_death"]),
+        "ssn_last4": d["ssn"].replace("-", "")[-4:],
+        "county": d["place_of_death_county"],
+        "state": a["state"],
+        "filer_relationship": a["relationship"],
+    }
+
+
+def _project_georgia_death_certificate(example: dict) -> dict:
+    """Project a georgia_death_certificate entry to flat CertificateData fields.
+
+    Args:
+        example: One entry from the template's 'examples' list.
+
+    Returns:
+        Dict of flat fields comparable to CertificateData output.
+    """
+    d = example["decedent"]
+    return {
+        "deceased_full_name": d["legal_full_name"],
+        "date_of_birth": _date_slash_to_iso(d["date_of_birth"]),
+        "date_of_death": _date_slash_to_iso(d["date_of_death"]),
+        "ssn_last4": d["ssn"].replace("-", "")[-4:],
+        "county": example["place_of_death"]["county"],
+        "state": d["residence"]["state"],
+        "filer_relationship": example["informant"]["relationship"],
+        "cause_of_death": example["cause_of_death"]["immediate_cause_a"],
+        "surviving_spouse": d.get("surviving_spouse"),
+    }
+
+
+def _project_florida_death_certificate_application(example: dict) -> dict:
+    """Project a florida_death_certificate_application entry to flat CertificateData fields.
+
+    cause_of_death is excluded — it does not appear on this form type.
+
+    Args:
+        example: One entry from the template's 'examples' list.
+
+    Returns:
+        Dict of flat fields comparable to CertificateData output.
+    """
+    ds = example["death_search"]
+    # place_of_death_city_county format: "City, <County Name> County"
+    county = ds["place_of_death_city_county"].split(", ", 1)[1].rsplit(" County", 1)[0]
+    return {
+        "deceased_full_name": ds["full_name_on_record"],
+        "date_of_birth": _date_slash_to_iso(ds["date_of_birth"]),
+        "date_of_death": _date_slash_to_iso(ds["date_of_death"]),
+        "ssn_last4": ds["ssn"].replace("-", "")[-4:],
+        "county": county,
+        "state": example["applicant"]["state"],
+        "filer_relationship": example["applicant"]["relationship_to_decedent"],
+    }
+
+
+def _project_cdc_us_standard_certificate_of_death(example: dict) -> dict:
+    """Project a cdc_us_standard_certificate_of_death entry to flat CertificateData fields.
+
+    CDC stores dates as 'Month D, YYYY' (e.g. 'March 3, 1952'), not MM/DD/YYYY.
+
+    Args:
+        example: One entry from the template's 'examples' list.
+
+    Returns:
+        Dict of flat fields comparable to CertificateData output.
+    """
+    d = example["decedent"]
+    mc = example["medical_certification"]
+    return {
+        "deceased_full_name": d["legal_name"],
+        "date_of_birth": _date_long_to_iso(d["date_of_birth"]),
+        "date_of_death": _date_long_to_iso(d["date_of_death"]),
+        "ssn_last4": d["ssn"].replace("-", "")[-4:],
+        "county": example["place_of_death"]["county"],
+        "state": d["residence"]["state"],
+        "filer_relationship": example["informant"]["relationship"],
+        "cause_of_death": mc["cause_of_death"]["part_1"][0]["cause"],
+        "surviving_spouse": d.get("surviving_spouse_name"),
+    }
+
+
+def _project_california_court_order_delayed_registration(example: dict) -> dict:
+    """Project a california_court_order_delayed_registration entry to flat CertificateData fields.
+
+    surviving_spouse is excluded — the JSON stores it as a nested object
+    (first_name / middle_name / last_name_birth), not a plain string, so it
+    cannot be compared directly to the model's string output.
+
+    Args:
+        example: One entry from the template's 'examples' list.
+
+    Returns:
+        Dict of flat fields comparable to CertificateData output.
+    """
+    d = example["decedent"]
+    return {
+        "deceased_full_name": f"{d['first_name']} {d['middle_name']} {d['last_name']}",
+        "date_of_birth": _date_slash_to_iso(d["date_of_birth"]),
+        "date_of_death": _date_slash_to_iso(d["date_of_death"]),
+        "ssn_last4": d["ssn"].replace("-", "")[-4:],
+        "county": example["place_of_death"]["county"],
+        "state": d["residence"]["state"],
+        "filer_relationship": d["informant"]["relationship"],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Template dispatch table and ground truth loader
+# ---------------------------------------------------------------------------
+
+_PROJECTORS: dict[str, object] = {
+    "texas_mail_application": _project_texas_mail_application,
+    "georgia_death_certificate": _project_georgia_death_certificate,
+    "florida_death_certificate_application": _project_florida_death_certificate_application,
+    "cdc_us_standard_certificate_of_death": _project_cdc_us_standard_certificate_of_death,
+    "california_court_order_delayed_registration": _project_california_court_order_delayed_registration,
 }
+
+
+def _load_ground_truth() -> dict[str, dict]:
+    """Load and project ground truth from ground_truth.json.
+
+    Iterates all templates and examples. Any example with a 'pdf_filename'
+    field is projected to flat CertificateData fields using the
+    template-specific projector. Examples without 'pdf_filename' are skipped.
+
+    To add a new PDF to evaluation: set 'pdf_filename' on the corresponding
+    entry in samples/ground_truth.json — no code changes required.
+
+    Returns:
+        Dict mapping pdf_filename -> flat truth dict.
+
+    Raises:
+        KeyError: If a template name in ground_truth.json has no registered projector.
+        FileNotFoundError: If ground_truth.json does not exist.
+    """
+    raw = json.loads(_GT_PATH.read_text())
+    result: dict[str, dict] = {}
+    for template_name, template_data in raw["templates"].items():
+        project = _PROJECTORS[template_name]
+        for example in template_data["examples"]:
+            filename = example.get("pdf_filename")
+            if not filename:
+                continue
+            result[filename] = project(example)
+    return result
+
+
+GROUND_TRUTH = _load_ground_truth()
 
 
 # ---------------------------------------------------------------------------
