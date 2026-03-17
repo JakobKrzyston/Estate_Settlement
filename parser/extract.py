@@ -1,5 +1,6 @@
 import base64
 import json
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -122,6 +123,60 @@ def parse_certificate(image_path: str, page: int = 0) -> dict:
     parsed = _parse_json_response(raw_text)
     result = CertificateData.model_validate(parsed)
     return result.model_dump()
+
+
+# ---------------------------------------------------------------------------
+# Metrics-aware extraction (used by eval harness)
+# ---------------------------------------------------------------------------
+
+_MODEL = "claude-sonnet-4-6"
+
+
+def _parse_certificate_with_metrics(image_path: str, page: int = 0) -> dict:
+    """Like parse_certificate but also returns API usage metadata.
+
+    Returns a dict with keys:
+        result         – extracted fields (same as parse_certificate return value)
+        model          – model ID used
+        input_tokens   – prompt token count from response.usage
+        output_tokens  – completion token count from response.usage
+        latency_ms     – wall-clock ms from request send to response received
+    """
+    path = Path(image_path)
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {image_path}")
+
+    client = anthropic.Anthropic()
+    content_block = _build_content_block(path, page)
+
+    t0 = time.perf_counter()
+    try:
+        response = client.messages.create(
+            model=_MODEL,
+            max_tokens=1024,
+            messages=[{
+                "role": "user",
+                "content": [
+                    content_block,
+                    {"type": "text", "text": EXTRACT_PROMPT},
+                ],
+            }],
+        )
+    except anthropic.APIError as exc:
+        raise RuntimeError(f"Anthropic API error: {exc}") from exc
+    latency_ms = round((time.perf_counter() - t0) * 1000)
+
+    raw_text = response.content[0].text
+    parsed = _parse_json_response(raw_text)
+    result = CertificateData.model_validate(parsed)
+
+    return {
+        "result": result.model_dump(),
+        "model": _MODEL,
+        "input_tokens": response.usage.input_tokens,
+        "output_tokens": response.usage.output_tokens,
+        "latency_ms": latency_ms,
+    }
 
 
 # ---------------------------------------------------------------------------

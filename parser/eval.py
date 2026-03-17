@@ -1,3 +1,5 @@
+import uuid
+from datetime import datetime
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -58,26 +60,88 @@ def score(extracted: dict, truth: dict) -> float:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    from parser import parse_certificate
+    from parser.extract import _parse_certificate_with_metrics
+    from parser import metrics
 
     samples_dir = Path(__file__).parent.parent / "samples"
+
+    trial_files = []
     scores = []
 
     for filename, truth in GROUND_TRUTH.items():
         pdf_path = samples_dir / filename
         try:
-            extracted = parse_certificate(str(pdf_path))
+            m = _parse_certificate_with_metrics(str(pdf_path))
         except Exception as exc:
             print(f"{filename}: ERROR — {exc}")
             continue
 
+        extracted = m["result"]
         s = score(extracted, truth)
         scores.append(s)
-        print(f"{filename}: {s:.0%}  ({int(s * len(truth))}/{len(truth)} fields)")
-        for field in truth:
+
+        fields = [k for k in truth if k != "confidence"]
+        hits = int(s * len(fields))
+
+        field_results = {
+            f: {
+                "expected": truth[f],
+                "got": extracted.get(f),
+                "match": extracted.get(f) == truth[f],
+            }
+            for f in fields
+        }
+
+        cost = metrics.projected_cost(m["model"], m["input_tokens"], m["output_tokens"])
+
+        trial_files.append({
+            "filename": filename,
+            "model": m["model"],
+            "latency_ms": m["latency_ms"],
+            "input_tokens": m["input_tokens"],
+            "output_tokens": m["output_tokens"],
+            "projected_cost_usd": cost,
+            "accuracy": round(s, 6),
+            "fields_correct": hits,
+            "fields_total": len(fields),
+            "model_confidence": extracted.get("confidence"),
+            "field_results": field_results,
+        })
+
+        # stdout — same format as before
+        print(f"{filename}: {s:.0%}  ({hits}/{len(fields)} fields)")
+        for field in fields:
             got = extracted.get(field)
-            match = "OK" if got == truth[field] else "FAIL"
-            print(f"  {match}  {field}: expected={truth[field]!r}  got={got!r}")
+            tag = "OK" if got == truth[field] else "FAIL"
+            print(f"  {tag}  {field}: expected={truth[field]!r}  got={got!r}")
 
     if scores:
-        print(f"\nOverall: {sum(scores)/len(scores):.0%}  ({len(scores)} files)")
+        overall = sum(scores) / len(scores)
+        print(f"\nOverall: {overall:.0%}  ({len(scores)} files)")
+
+        total_input   = sum(f["input_tokens"]      for f in trial_files)
+        total_output  = sum(f["output_tokens"]     for f in trial_files)
+        total_cost    = sum(f["projected_cost_usd"] for f in trial_files)
+        total_correct = sum(f["fields_correct"]    for f in trial_files)
+        total_fields  = sum(f["fields_total"]      for f in trial_files)
+        model = trial_files[0]["model"]
+
+        trial = {
+            "trial_id": uuid.uuid4().hex[:8],
+            "run_at": datetime.now().isoformat(),
+            "model": model,
+            "files": trial_files,
+            "summary": {
+                "files_count": len(trial_files),
+                "overall_accuracy": round(overall, 6),
+                "fields_correct": total_correct,
+                "fields_total": total_fields,
+                "total_latency_ms": sum(f["latency_ms"] for f in trial_files),
+                "total_input_tokens": total_input,
+                "total_output_tokens": total_output,
+                "projected_cost_usd": round(total_cost, 8),
+            },
+        }
+
+        path = metrics.append_trial(trial)
+        print(f"Metrics written to: {path}")
