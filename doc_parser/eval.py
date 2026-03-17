@@ -60,8 +60,8 @@ def score(extracted: dict, truth: dict) -> float:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    from parser.extract import _parse_certificate_with_metrics
-    from parser import metrics
+    from doc_parser.extract import _parse_certificate_with_metrics
+    from doc_parser import metrics
 
     samples_dir = Path(__file__).parent.parent / "samples"
 
