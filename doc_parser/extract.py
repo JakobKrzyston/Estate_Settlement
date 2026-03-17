@@ -185,10 +185,38 @@ def _parse_certificate_with_metrics(image_path: str, page: int = 0) -> dict:
 
 if __name__ == "__main__":
     import argparse
+    import sys
+
+    SAMPLES_DIR = Path(__file__).parent.parent / "samples"
 
     ap = argparse.ArgumentParser(description="Extract fields from a death certificate.")
-    ap.add_argument("path", help="Path to a PDF or image file")
+    ap.add_argument(
+        "paths",
+        nargs="*",
+        help="Path(s) to PDF or image files. Defaults to all *.pdf in samples/",
+    )
     ap.add_argument("--page", type=int, default=0, help="0-indexed page number (PDF only, default 0)")
+    ap.add_argument(
+        "--output",
+        default="output/results.jsonl",
+        help="Output JSON Lines file (default: output/results.jsonl)",
+    )
     args = ap.parse_args()
 
-    print(json.dumps(parse_certificate(args.path, page=args.page), indent=2))
+    if args.paths:
+        files = [Path(p) for p in args.paths]
+    else:
+        files = sorted(SAMPLES_DIR.glob("*.pdf"))
+        if not files:
+            sys.exit(f"No .pdf files found in {SAMPLES_DIR}")
+
+    out_path = Path(args.output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with out_path.open("w") as fh:
+        for file in files:
+            record = {"file": str(file), **parse_certificate(str(file), page=args.page)}
+            fh.write(json.dumps(record) + "\n")
+            print(f"✓ {file.name}", file=sys.stderr)
+
+    print(f"Results written to {out_path}")
