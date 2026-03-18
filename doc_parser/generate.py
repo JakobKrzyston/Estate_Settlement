@@ -1,6 +1,6 @@
 """Letter generator: fill death-notification templates from extracted certificate data.
 
-Public API: render_letter, fill_template, generate_letters
+Public API: render_letter, export_pdf, fill_template, generate_letters
 CLI: python -m doc_parser.generate
 """
 
@@ -32,6 +32,20 @@ def render_letter(institution: str, data: dict) -> str:
     """
     template = _RENDER_ENV.get_template(f"{institution}.html")
     return template.render(**data)
+
+
+def export_pdf(html_string: str, output_path: str) -> None:
+    """Write a rendered HTML string to a PDF file via WeasyPrint.
+
+    Args:
+        html_string: Fully rendered HTML content.
+        output_path: Destination file path (e.g. 'output/letters/cert_ssa.pdf').
+
+    Returns:
+        None
+    """
+    from weasyprint import HTML
+    HTML(string=html_string).write_pdf(output_path)
 
 
 def _make_env() -> Environment:
