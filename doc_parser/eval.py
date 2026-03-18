@@ -239,8 +239,12 @@ if __name__ == "__main__":
     field_hits: dict[str, int] = {}
     field_totals: dict[str, int] = {}
 
-    for filename, truth in GROUND_TRUTH.items():
-        pdf_path = samples_dir / filename
+    for pdf_path in sorted(samples_dir.glob("*.pdf")):
+        filename = pdf_path.name
+        truth = GROUND_TRUTH.get(filename)
+        if truth is None:
+            print(f"{filename}: no ground truth, skipping")
+            continue
         try:
             m = _parse_certificate_with_metrics(str(pdf_path))
         except Exception as exc:
