@@ -1,6 +1,6 @@
 """Letter generator: fill death-notification templates from extracted certificate data.
 
-Public API: fill_template, generate_letters
+Public API: render_letter, fill_template, generate_letters
 CLI: python -m doc_parser.generate
 """
 
@@ -13,6 +13,25 @@ from jinja2 import DebugUndefined, Environment, FileSystemLoader
 
 _TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "death-notification-templates"
 _ALL_TEMPLATES = ["ssa", "medicare", "utility", "telecom", "bank"]
+
+_RENDER_ENV = Environment(
+    loader=FileSystemLoader(str(Path(__file__).parent.parent / "templates")),
+    keep_trailing_newline=True,
+)
+
+
+def render_letter(institution: str, data: dict) -> str:
+    """Render an institution letter template with extracted certificate data.
+
+    Args:
+        institution: Template name without extension (e.g. 'ssa', 'bank').
+        data: Dict of template variable names → values.
+
+    Returns:
+        Rendered letter as a string.
+    """
+    template = _RENDER_ENV.get_template(f"{institution}.html")
+    return template.render(**data)
 
 
 def _make_env() -> Environment:
