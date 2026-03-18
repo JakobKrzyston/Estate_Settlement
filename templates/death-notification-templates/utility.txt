@@ -1,0 +1,32 @@
+{{ date }}
+
+{{ utility_company_name }}
+Customer Service / Account Services Department
+
+Re: Account Cancellation Due to Death of Account Holder — Account No. {{ account_number }}
+
+To Whom It May Concern:
+
+I am writing to request the cancellation of the above-referenced account, currently held in the name of {{ account_holder_name }}, at service address {{ service_address }}.
+
+{{ account_holder_name }} passed away on {{ date_of_death }}. I am the {{ sender_relationship }} and am responsible for settling the estate.
+
+Please take the following actions:
+
+  1. Cancel service at {{ service_address }} effective immediately or at the earliest possible date.
+  2. Issue a final bill reflecting all charges through the cancellation date.
+  3. Send the final bill and any refund of deposits or credits to the forwarding address below.
+
+Forwarding address for final bill and correspondence:
+{{ forwarding_address }}
+
+A certified copy of the death certificate is available upon request.
+
+Thank you for your prompt attention to this matter. If you need to reach me, please use the contact information below.
+
+Sincerely,
+
+{{ sender_name }}
+{{ sender_relationship }} of {{ account_holder_name }}
+{{ sender_address }}
+{{ sender_phone }}

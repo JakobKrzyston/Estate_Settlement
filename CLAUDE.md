@@ -10,9 +10,11 @@ Extracts structured fields from death certificate PDFs using the Anthropic visio
 
 ## Project Structure
 - `doc_parser/extract.py` — core extraction logic + CLI entry point
+- `doc_parser/generate.py` — letter generator: fills notification templates from extracted data
 - `doc_parser/eval.py` — evaluation harness comparing output to ground truth
 - `doc_parser/metrics.py` — field-level scoring helpers
 - `doc_parser/prompts.py` — prompt constants
+- `templates/death-notification-templates/` — Jinja2 `.txt` letter templates (ssa, medicare, utility, telecom, bank)
 - `samples/` — test PDFs and `ground_truth.json`
 - `output/` — generated result files (gitignored)
 

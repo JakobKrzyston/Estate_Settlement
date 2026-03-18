@@ -41,19 +41,58 @@ python -m doc_parser.extract samples/TX_Reyes.pdf samples/TX_Thornton.pdf
 python -m doc_parser.eval
 ```
 
+**Generate filled notification letters from extraction output:**
+```bash
+# Fill a single template (ssa, medicare, utility, telecom, bank)
+python -m doc_parser.generate \
+    --results output/results.jsonl \
+    --record 0 \
+    --template ssa \
+    --vars vars.json
+
+# Fill all five templates at once
+python -m doc_parser.generate \
+    --results output/results.jsonl \
+    --record 0 \
+    --all \
+    --vars vars.json
+```
+
+`vars.json` provides supplemental fields not found on the death certificate (sender info, account numbers, etc.):
+```json
+{
+  "sender_name": "Jane Doe",
+  "sender_address": "456 Elm St, Austin TX 78701",
+  "sender_phone": "(512) 555-1234",
+  "date": "March 17, 2026",
+  "forwarding_address": "456 Elm St, Austin TX 78701",
+  "account_number": "XXXXXX1234",
+  "medicare_beneficiary_id": "1EG4-TE5-MK72"
+}
+```
+
+Certificate fields (`deceased_full_name`, `date_of_death`, `filer_relationship`, etc.) are filled automatically from the extraction output. Any template slot that remains unresolved is left visible as `{{ slot_name }}` so you can see what still needs filling.
+
+Output files are written to `output/letters/<cert_stem>_<template>.txt`.
+
 ## Project Structure
 
 ```
 doc_parser/
   extract.py    Core extraction logic, Pydantic output schema, CLI entry point
+  generate.py   Letter generator — fills notification templates from extracted data
   eval.py       Evaluation harness — scores output against ground_truth.json
   metrics.py    Cost projection and trial result logging
   prompts.py    Prompt constants passed to the model
+templates/
+  death-notification-templates/
+    ssa.txt, medicare.txt, utility.txt, telecom.txt, bank.txt
 samples/
   *.pdf                 Sample death certificates for testing
   ground_truth.json     Expected field values for evaluation
 output/
   results.jsonl         Extraction output (generated, not committed)
+  letters/              Filled letter output (generated, not committed)
 ```
 
 ## Output Format

@@ -1,0 +1,39 @@
+{{ date }}
+
+{{ telecom_company_name }}
+Estate Services / Customer Care Department
+
+Re: Account Cancellation Due to Death of Account Holder — Account No. {{ account_number }}
+    Phone Number(s): {{ phone_numbers_on_account }}
+
+To Whom It May Concern:
+
+I am writing to notify {{ telecom_company_name }} of the death of {{ account_holder_name }}, account number {{ account_number }}, who passed away on {{ date_of_death }}. I am the {{ sender_relationship }} and am responsible for settling the estate.
+
+Service address on account: {{ service_address }}
+
+Please take the following actions:
+
+  1. {{ porting_or_cancel_preference }}
+  2. Cancel any remaining lines, services, or equipment installment agreements on this account effective as of the date of death or earliest available date.
+  3. Issue a final bill and send it, along with any applicable credits or refunds, to the forwarding address below.
+  4. Provide written confirmation of account cancellation (and number porting completion, if applicable) to the forwarding address below.
+
+Forwarding address:
+{{ forwarding_address }}
+
+A certified copy of the death certificate is enclosed. If additional documentation is required to process this request, please contact me at the information below.
+
+Sincerely,
+
+{{ sender_name }}
+{{ sender_relationship }} of {{ account_holder_name }}
+{{ sender_address }}
+{{ sender_phone }}
+
+Enclosure: Certified Copy of Death Certificate
+
+---
+NOTE: For {{ porting_or_cancel_preference }}, use one of the following depending on the situation:
+  - Cancellation: "Cancel all phone numbers on this account ({{ phone_numbers_on_account }}) effective immediately."
+  - Port out:     "Port the number(s) {{ phone_numbers_on_account }} to [new carrier] per the attached porting authorization, and cancel all remaining services."

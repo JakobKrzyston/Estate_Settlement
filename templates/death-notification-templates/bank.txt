@@ -1,0 +1,45 @@
+{{ date }}
+
+{{ bank_name }}
+Estate Services Department
+{{ mailing_address_for_death_cert }}
+
+Re: Notice of Death and Request for Account Closure — {{ account_holder_name }}
+    Account(s): {{ account_numbers }}
+
+To Whom It May Concern:
+
+I am writing to formally notify {{ bank_name }} of the death of {{ account_holder_name }}, who passed away on {{ date_of_death }}. I am the {{ sender_relationship }} and am acting in my capacity as {{ sender_capacity }} for the estate.
+
+Please take the following actions with respect to all accounts held by {{ account_holder_name }}, including but not limited to account(s) {{ account_numbers }}:
+
+  1. Place a hold on disbursements from the above accounts pending the estate settlement process, in accordance with applicable law.
+  2. Provide a current balance statement and list of any outstanding transactions for each account.
+  3. Initiate the account closure process and transfer or release funds in accordance with applicable law, beneficiary designations, and your institution's estate procedures.
+
+A certified copy of the death certificate is enclosed. Additional documentation — including Letters Testamentary or Letters of Administration — will be provided upon request or as required by your institution.
+
+Please direct all estate-related correspondence to:
+
+{{ sender_name }}
+{{ sender_capacity }}
+{{ sender_address }}
+{{ sender_phone }}
+
+{{ estate_attorney_name }}
+
+Thank you for your attention to this matter. I ask that you contact me promptly if any additional documentation is needed so we can resolve this in a timely manner.
+
+Sincerely,
+
+{{ sender_name }}
+{{ sender_capacity }}, Estate of {{ account_holder_name }}
+{{ sender_address }}
+{{ sender_phone }}
+
+Enclosure: Certified Copy of Death Certificate
+
+---
+NOTE: Replace {{ estate_attorney_name }} with one of:
+  - "Questions may also be directed to my estate attorney, [Attorney Name], at [phone/email]."
+  - (Leave blank / remove line if no attorney is involved.)

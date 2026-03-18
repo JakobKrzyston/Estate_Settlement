@@ -1,0 +1,33 @@
+{{ date }}
+
+Centers for Medicare & Medicaid Services
+Medicare Correspondence
+P.O. Box 1270
+Lawrence, KS 66044
+
+Re: Notification of Death — {{ deceased_full_name }} | MBI: {{ medicare_beneficiary_id }} | SSN: {{ deceased_ssn }}
+
+To Whom It May Concern:
+
+I am writing to notify Medicare of the death of {{ deceased_full_name }}, Medicare Beneficiary Identifier (MBI) {{ medicare_beneficiary_id }}, Social Security Number {{ deceased_ssn }}, who passed away on {{ date_of_death }}.
+
+I am the {{ sender_relationship }} of the deceased and am managing the affairs of the estate.
+
+Please take the following actions:
+
+  1. Terminate Medicare coverage for {{ deceased_full_name }} effective as of {{ date_of_death }}.
+  2. Cancel any pending claims or premium billing associated with this beneficiary account.
+  3. Direct any outstanding correspondence or refund of overpaid premiums to the address listed below.
+
+A certified copy of the death certificate is enclosed for your records.
+
+If additional information or documentation is required, please do not hesitate to contact me.
+
+Sincerely,
+
+{{ sender_name }}
+{{ sender_relationship }} of {{ deceased_full_name }}
+{{ sender_address }}
+{{ sender_phone }}
+
+Enclosure: Certified Copy of Death Certificate

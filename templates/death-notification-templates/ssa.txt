@@ -1,0 +1,33 @@
+{{ date }}
+
+Social Security Administration
+Office of Earnings & International Operations
+P.O. Box 17769
+Baltimore, MD 21235-7769
+
+Re: Notification of Death — {{ deceased_full_name }} | SSN: {{ deceased_ssn }}
+
+To Whom It May Concern:
+
+I am writing to notify the Social Security Administration of the death of {{ deceased_full_name }}, Social Security Number {{ deceased_ssn }}, who passed away on {{ date_of_death }}.
+
+I am the {{ sender_relationship }} of the deceased and am responsible for managing the affairs of the estate.
+
+Please take the following actions:
+
+  1. Cease all benefit payments to {{ deceased_full_name }} effective as of the date of death.
+  2. Recover any payments issued for the month of death or thereafter, in accordance with SSA policy.
+  3. Send any correspondence or instructions regarding benefit recovery or survivor benefits to the address below.
+
+A certified copy of the death certificate is enclosed for your records.
+
+If you require any additional documentation or information, please contact me at the phone number or address listed below.
+
+Sincerely,
+
+{{ sender_name }}
+{{ sender_relationship }} of {{ deceased_full_name }}
+{{ sender_address }}
+{{ sender_phone }}
+
+Enclosure: Certified Copy of Death Certificate
