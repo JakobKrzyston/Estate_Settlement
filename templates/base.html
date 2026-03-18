@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Estate Notification &mdash; {{ deceased_full_name }}</title>
+  <style>
+    body {
+      font-family: Georgia, serif;
+      font-size: 12pt;
+      line-height: 1.6;
+      color: #111;
+      max-width: 680px;
+      margin: 60px auto;
+      padding: 0 40px;
+    }
+    .date { margin-bottom: 32px; }
+    .filer-block { margin-bottom: 32px; }
+    .filer-block p { margin: 0; }
+    .salutation { margin-bottom: 20px; }
+    .body { margin-bottom: 24px; }
+    .body p { margin: 0 0 16px; }
+    .closing { margin-top: 40px; }
+    .closing p { margin: 0; }
+    .signature { margin-top: 48px; }
+    .signature p { margin: 0; }
+    .deceased-details {
+      margin: 20px 0;
+      padding: 12px 16px;
+      border-left: 3px solid #555;
+    }
+    .deceased-details p { margin: 0 0 4px; }
+    @media print {
+      body { margin: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- DATE -->
+  <div class="date">{{ today }}</div>
+
+  <!-- FILER BLOCK: edit these once with your actual details -->
+  <div class="filer-block">
+    <p><strong>Your Full Name</strong></p>
+    <p>123 Your Street</p>
+    <p>City, State 00000</p>
+    <p>(555) 000-0000</p>
+    <p>your.email@example.com</p>
+  </div>
+
+  <!-- SALUTATION -->
+  <div class="salutation">To Whom It May Concern,</div>
+
+  <!-- OPENING -->
+  <div class="body">
+    <p>
+      I am writing to notify you of the passing of <strong>{{ deceased_full_name }}</strong>,
+      who passed away on {{ date_of_death }} in {{ county }} County, {{ state }}.
+      I am their {{ filer_relationship }}.
+    </p>
+
+    <!-- DECEASED IDENTIFICATION DETAILS -->
+    <div class="deceased-details">
+      <p><strong>Decedent:</strong> {{ deceased_full_name }}</p>
+      <p><strong>Date of Birth:</strong> {{ date_of_birth }}</p>
+      <p><strong>Date of Death:</strong> {{ date_of_death }}</p>
+      <p><strong>SSN (last 4):</strong> &mdash;&mdash;&mdash;{{ ssn_last4 }}</p>
+      <p><strong>County / State:</strong> {{ county }}, {{ state }}</p>
+      {% if surviving_spouse %}
+      <p><strong>Surviving Spouse:</strong> {{ surviving_spouse }}</p>
+      {% endif %}
+    </div>
+
+    <p>
+      A certified copy of the death certificate is enclosed for your records.
+      Please use the identification details above to locate any accounts, policies,
+      or records associated with the decedent.
+    </p>
+  </div>
+
+  <!-- INSTITUTION-SPECIFIC CONTENT -->
+  {% block content %}
+  <!-- Child templates extend this block with institution-specific requests. -->
+  {% endblock %}
+
+  <!-- CLOSING -->
+  <div class="closing">
+    <p>Please do not hesitate to contact me with any questions or to request additional documentation.</p>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div class="signature">
+    <p>Sincerely,</p>
+    <br>
+    <br>
+    <p><strong>Your Full Name</strong></p>
+    <p>{{ filer_relationship }} of {{ deceased_full_name }}</p>
+    <p>(555) 000-0000</p>
+    <p>your.email@example.com</p>
+  </div>
+
+</body>
+</html>
