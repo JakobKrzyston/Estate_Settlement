@@ -17,6 +17,7 @@ _ALL_TEMPLATES = ["ssa", "medicare", "utility", "telecom", "bank"]
 
 _RENDER_ENV = Environment(
     loader=FileSystemLoader(str(Path(__file__).parent.parent / "templates")),
+    undefined=DebugUndefined,
     keep_trailing_newline=True,
 )
 
