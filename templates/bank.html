@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>{{ bank_name }}</p>
+    <p>Estate Services Department</p>
+    <p>{{ mailing_address_for_death_cert }}</p>
+  </div>
+  <div class="re-line">Re: Notice of Death and Request for Account Closure &mdash; {{ account_holder_name }}, Account(s): {{ account_numbers }}</div>
+{% endblock %}
+
+{% block content %}
+  <div class="body">
+    <p>
+      I am acting in my capacity as <strong>{{ sender_capacity }}</strong> for the estate.
+      Please take the following actions with respect to all accounts held by {{ account_holder_name }},
+      including but not limited to account(s) {{ account_numbers }}:
+    </p>
+    <ol>
+      <li>Place a hold on disbursements from the above accounts pending the estate settlement process, in accordance with applicable law.</li>
+      <li>Provide a current balance statement and list of any outstanding transactions for each account.</li>
+      <li>Initiate the account closure process and transfer or release funds in accordance with applicable law, beneficiary designations, and your institution's estate procedures.</li>
+    </ol>
+    <p>
+      Additional documentation &mdash; including Letters Testamentary or Letters of Administration &mdash;
+      will be provided upon request or as required by your institution.
+    </p>
+    {% if estate_attorney_name %}
+    <p>{{ estate_attorney_name }}</p>
+    {% endif %}
+  </div>
+{% endblock %}

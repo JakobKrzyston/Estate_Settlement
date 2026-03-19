@@ -16,6 +16,9 @@
     .date { margin-bottom: 32px; }
     .filer-block { margin-bottom: 32px; }
     .filer-block p { margin: 0; }
+    .institution-block { margin-bottom: 24px; }
+    .institution-block p { margin: 0; }
+    .re-line { margin-bottom: 24px; font-weight: bold; }
     .salutation { margin-bottom: 20px; }
     .body { margin-bottom: 24px; }
     .body p { margin: 0 0 16px; }
@@ -37,16 +40,17 @@
 <body>
 
   <!-- DATE -->
-  <div class="date">{{ today }}</div>
+  <div class="date">{{ date }}</div>
 
-  <!-- FILER BLOCK: edit these once with your actual details -->
+  <!-- FILER BLOCK -->
   <div class="filer-block">
-    <p><strong>Your Full Name</strong></p>
-    <p>123 Your Street</p>
-    <p>City, State 00000</p>
-    <p>(555) 000-0000</p>
-    <p>your.email@example.com</p>
+    <p><strong>{{ sender_name }}</strong></p>
+    <p>{{ sender_address }}</p>
+    <p>{{ sender_phone }}</p>
   </div>
+
+  <!-- INSTITUTION ADDRESS + RE: LINE -->
+  {% block institution_header %}{% endblock %}
 
   <!-- SALUTATION -->
   <div class="salutation">To Whom It May Concern,</div>
@@ -56,7 +60,7 @@
     <p>
       I am writing to notify you of the passing of <strong>{{ deceased_full_name }}</strong>,
       who passed away on {{ date_of_death }} in {{ county }} County, {{ state }}.
-      I am their {{ filer_relationship }}.
+      I am their {{ sender_relationship }}.
     </p>
 
     <!-- DECEASED IDENTIFICATION DETAILS -->
@@ -79,9 +83,7 @@
   </div>
 
   <!-- INSTITUTION-SPECIFIC CONTENT -->
-  {% block content %}
-  <!-- Child templates extend this block with institution-specific requests. -->
-  {% endblock %}
+  {% block content %}{% endblock %}
 
   <!-- CLOSING -->
   <div class="closing">
@@ -93,10 +95,10 @@
     <p>Sincerely,</p>
     <br>
     <br>
-    <p><strong>Your Full Name</strong></p>
-    <p>{{ filer_relationship }} of {{ deceased_full_name }}</p>
-    <p>(555) 000-0000</p>
-    <p>your.email@example.com</p>
+    <p><strong>{{ sender_name }}</strong></p>
+    <p>{{ sender_relationship }} of {{ deceased_full_name }}</p>
+    <p>{{ sender_address }}</p>
+    <p>{{ sender_phone }}</p>
   </div>
 
 </body>

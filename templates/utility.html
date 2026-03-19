@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>{{ utility_company_name }}</p>
+    <p>Customer Service / Account Services Department</p>
+  </div>
+  <div class="re-line">Re: Account Cancellation Due to Death of Account Holder &mdash; Account No. {{ account_number }}</div>
+{% endblock %}
+
+{% block content %}
+  <div class="body">
+    <p>
+      I am requesting the cancellation of the above-referenced account, currently held in the name of
+      {{ account_holder_name }}, at service address {{ service_address }}.
+    </p>
+    <p>Please take the following actions:</p>
+    <ol>
+      <li>Cancel service at {{ service_address }} effective immediately or at the earliest possible date.</li>
+      <li>Issue a final bill reflecting all charges through the cancellation date.</li>
+      <li>Send the final bill and any refund of deposits or credits to the forwarding address below.</li>
+    </ol>
+    <p><strong>Forwarding address for final bill and correspondence:</strong><br>{{ forwarding_address }}</p>
+  </div>
+{% endblock %}

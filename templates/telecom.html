@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>{{ telecom_company_name }}</p>
+    <p>Estate Services / Customer Care Department</p>
+  </div>
+  <div class="re-line">Re: Account Cancellation Due to Death of Account Holder &mdash; Account No. {{ account_number }}, Phone Number(s): {{ phone_numbers_on_account }}</div>
+{% endblock %}
+
+{% block content %}
+  <div class="body">
+    <p>Service address on account: {{ service_address }}</p>
+    <p>Please take the following actions:</p>
+    <ol>
+      <li>{{ porting_or_cancel_preference }}</li>
+      <li>Cancel any remaining lines, services, or equipment installment agreements on this account effective as of the date of death or earliest available date.</li>
+      <li>Issue a final bill and send it, along with any applicable credits or refunds, to the forwarding address below.</li>
+      <li>Provide written confirmation of account cancellation (and number porting completion, if applicable) to the forwarding address below.</li>
+    </ol>
+    <p><strong>Forwarding address:</strong><br>{{ forwarding_address }}</p>
+  </div>
+{% endblock %}

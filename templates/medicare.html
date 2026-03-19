@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>Centers for Medicare &amp; Medicaid Services</p>
+    <p>Medicare Correspondence</p>
+    <p>P.O. Box 1270</p>
+    <p>Lawrence, KS 66044</p>
+  </div>
+  <div class="re-line">Re: Notification of Death &mdash; {{ deceased_full_name }} | MBI: {{ medicare_beneficiary_id }} | SSN: {{ deceased_ssn }}</div>
+{% endblock %}
+
+{% block content %}
+  <div class="body">
+    <p>Please take the following actions:</p>
+    <ol>
+      <li>Terminate Medicare coverage for {{ deceased_full_name }} effective as of {{ date_of_death }}.</li>
+      <li>Cancel any pending claims or premium billing associated with this beneficiary account.</li>
+      <li>Direct any outstanding correspondence or refund of overpaid premiums to the address listed below.</li>
+    </ol>
+  </div>
+{% endblock %}

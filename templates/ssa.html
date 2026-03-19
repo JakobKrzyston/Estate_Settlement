@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>Social Security Administration</p>
+    <p>Office of Earnings &amp; International Operations</p>
+    <p>P.O. Box 17769</p>
+    <p>Baltimore, MD 21235-7769</p>
+  </div>
+  <div class="re-line">Re: Notification of Death &mdash; {{ deceased_full_name }} | SSN: {{ deceased_ssn }}</div>
+{% endblock %}
+
+{% block content %}
+  <div class="body">
+    <p>Please take the following actions:</p>
+    <ol>
+      <li>Cease all benefit payments to {{ deceased_full_name }} effective as of the date of death.</li>
+      <li>Recover any payments issued for the month of death or thereafter, in accordance with SSA policy.</li>
+      <li>Send any correspondence or instructions regarding benefit recovery or survivor benefits to the address below.</li>
+    </ol>
+  </div>
+{% endblock %}

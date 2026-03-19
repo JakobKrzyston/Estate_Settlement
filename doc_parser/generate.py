@@ -6,6 +6,7 @@ CLI: python -m doc_parser.generate
 
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -18,6 +19,21 @@ _RENDER_ENV = Environment(
     loader=FileSystemLoader(str(Path(__file__).parent.parent / "templates")),
     keep_trailing_newline=True,
 )
+
+
+def _fmt_date(iso: str) -> str:
+    """Format an ISO date string as 'Month D, YYYY' (e.g. 'February 10, 2024').
+
+    Args:
+        iso: Date string in YYYY-MM-DD format.
+
+    Returns:
+        Spelled-out date string, or the original value if parsing fails.
+    """
+    try:
+        return datetime.strptime(iso, "%Y-%m-%d").strftime("%B %-d, %Y")
+    except (ValueError, TypeError):
+        return iso or ""
 
 
 def render_letter(institution: str, data: dict) -> str:
@@ -35,7 +51,7 @@ def render_letter(institution: str, data: dict) -> str:
 
 
 def export_pdf(html_string: str, output_path: str) -> None:
-    """Write a rendered HTML string to a PDF file via WeasyPrint.
+    """Write a rendered HTML string to a PDF file via xhtml2pdf.
 
     Args:
         html_string: Fully rendered HTML content.
@@ -44,8 +60,9 @@ def export_pdf(html_string: str, output_path: str) -> None:
     Returns:
         None
     """
-    from weasyprint import HTML
-    HTML(string=html_string).write_pdf(output_path)
+    from xhtml2pdf import pisa
+    with open(output_path, "wb") as f:
+        pisa.CreatePDF(html_string, dest=f)
 
 
 def _make_env() -> Environment:
@@ -65,11 +82,16 @@ def _cert_to_vars(cert: dict) -> dict:
     Returns:
         dict of template variable names → values.
     """
+    last4 = cert.get("ssn_last4") or ""
+    full_name = cert.get("deceased_full_name") or ""
     return {
-        "deceased_full_name": cert.get("deceased_full_name") or "",
-        "date_of_death": cert.get("date_of_death") or "",
-        "date_of_birth": cert.get("date_of_birth") or "",
-        "ssn_last4": cert.get("ssn_last4") or "",
+        "deceased_full_name": full_name,
+        # alias used by bank/telecom/utility templates
+        "account_holder_name": full_name,
+        "date_of_death": _fmt_date(cert.get("date_of_death") or ""),
+        "date_of_birth": _fmt_date(cert.get("date_of_birth") or ""),
+        "ssn_last4": last4,
+        "deceased_ssn": f"XXX-XX-{last4}" if last4 else "",
         "county": cert.get("county") or "",
         "state": cert.get("state") or "",
         "surviving_spouse": cert.get("surviving_spouse") or "",
@@ -130,11 +152,11 @@ def generate_letters(
 
     written = []
     for name in names:
-        text = fill_template(name, vars)
         stem = cert.get("file", "cert")
         stem = Path(stem).stem  # e.g. "TX_Reyes"
-        dest = out / f"{stem}_{name}.txt"
-        dest.write_text(text)
+        dest = out / f"{stem}_{name}.pdf"
+        html = render_letter(name, vars)
+        export_pdf(html, str(dest))
         written.append(dest)
 
     return written
