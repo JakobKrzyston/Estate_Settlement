@@ -82,21 +82,24 @@ def _cert_to_vars(cert: dict) -> dict:
     Returns:
         dict of template variable names → values.
     """
-    last4 = cert.get("ssn_last4") or ""
-    full_name = cert.get("deceased_full_name") or ""
+    deceased = cert.get("deceased") or {}
+    filer = cert.get("filer") or {}
+    last4 = deceased.get("ssn_last4") or ""
+    full_name = deceased.get("full_name") or ""
     return {
         "deceased_full_name": full_name,
         # alias used by bank/telecom/utility templates
         "account_holder_name": full_name,
-        "date_of_death": _fmt_date(cert.get("date_of_death") or ""),
-        "date_of_birth": _fmt_date(cert.get("date_of_birth") or ""),
+        "date_of_death": _fmt_date(deceased.get("date_of_death") or ""),
+        "date_of_birth": _fmt_date(deceased.get("date_of_birth") or ""),
         "ssn_last4": last4,
         "deceased_ssn": f"XXX-XX-{last4}" if last4 else "",
-        "county": cert.get("county") or "",
-        "state": cert.get("state") or "",
-        "surviving_spouse": cert.get("surviving_spouse") or "",
-        # filer_relationship from cert pre-fills sender_relationship slot
-        "sender_relationship": cert.get("filer_relationship") or "",
+        "county": deceased.get("county") or "",
+        "state": deceased.get("state") or "",
+        "surviving_spouse": deceased.get("surviving_spouse") or "",
+        "sender_name": filer.get("name") or "",
+        "sender_relationship": filer.get("relationship") or "",
+        "sender_address": filer.get("address") or "",
     }
 
 

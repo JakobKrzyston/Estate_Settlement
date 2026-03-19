@@ -15,17 +15,18 @@ from pathlib import Path
 
 import pytest
 
-from doc_parser.eval import GROUND_TRUTH
+from doc_parser.eval import GROUND_TRUTH, _flatten
 
 _RESULTS_PATH = Path(__file__).parent.parent / "output" / "results.jsonl"
 
 # Free-text fields where Levenshtein fuzzy matching applies.
 _FUZZY_FIELDS = frozenset({
-    "deceased_full_name",
-    "cause_of_death",
-    "surviving_spouse",
-    "filer_relationship",
-    "county",
+    "deceased.full_name",
+    "deceased.cause_of_death",
+    "deceased.surviving_spouse",
+    "deceased.county",
+    "filer.name",
+    "filer.address",
 })
 
 # Levenshtein ratio threshold for "partially_correct" (0–1).
@@ -131,9 +132,11 @@ def cached_results() -> dict[str, dict]:
 # Per-field parametrised tests
 # ---------------------------------------------------------------------------
 
+_FLAT_GROUND_TRUTH = {fn: _flatten(truth) for fn, truth in GROUND_TRUTH.items()}
+
 _TEST_CASES = [
     (filename, field, truth[field])
-    for filename, truth in sorted(GROUND_TRUTH.items())
+    for filename, truth in sorted(_FLAT_GROUND_TRUTH.items())
     for field in truth
     if field != "confidence"
 ]
@@ -150,7 +153,7 @@ def test_field(filename: str, field: str, expected, cached_results: dict) -> Non
 
     Args:
         filename: PDF basename, e.g. 'TX_Thornton.pdf'.
-        field: Field name from CertificateData.
+        field: Dot-notation field name, e.g. 'deceased.full_name'.
         expected: Ground-truth value.
         cached_results: Session fixture with loaded results.jsonl data.
     """
@@ -159,7 +162,7 @@ def test_field(filename: str, field: str, expected, cached_results: dict) -> Non
             f"No cached result for {filename!r} — run: python -m doc_parser.extract"
         )
 
-    got = cached_results[filename].get(field)
+    got = _flatten(cached_results[filename]).get(field)
     category = _score_field(field, got, expected)
 
     if category == "partially_correct":
@@ -192,7 +195,7 @@ def test_overall_accuracy(cached_results: dict) -> None:
     Args:
         cached_results: Session fixture with loaded results.jsonl data.
     """
-    available = {fn: gt for fn, gt in GROUND_TRUTH.items() if fn in cached_results}
+    available = {fn: gt for fn, gt in _FLAT_GROUND_TRUTH.items() if fn in cached_results}
     if not available:
         pytest.skip("No cached results — run: python -m doc_parser.extract")
 
@@ -200,7 +203,7 @@ def test_overall_accuracy(cached_results: dict) -> None:
     max_weight = 0.0
 
     for filename, truth in available.items():
-        extracted = cached_results[filename]
+        extracted = _flatten(cached_results[filename])
         fields = [f for f in truth if f != "confidence"]
         for field in fields:
             category = _score_field(field, extracted.get(field), truth[field])

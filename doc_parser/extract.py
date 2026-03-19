@@ -4,12 +4,12 @@ import base64
 import json
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 import anthropic
 import fitz  # pymupdf
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .prompts import EXTRACT_PROMPT
 
@@ -20,8 +20,10 @@ load_dotenv()
 # Output schema
 # ---------------------------------------------------------------------------
 
-class CertificateData(BaseModel):
-    deceased_full_name: Optional[str] = None
+class DeceasedData(BaseModel):
+    """Fields describing the deceased individual on the certificate."""
+
+    full_name: Optional[str] = None
     date_of_birth: Optional[str] = None
     date_of_death: Optional[str] = None
     ssn_last4: Optional[str] = Field(default=None, max_length=4)
@@ -29,7 +31,34 @@ class CertificateData(BaseModel):
     county: Optional[str] = None
     state: Optional[str] = None
     surviving_spouse: Optional[str] = None
-    filer_relationship: Optional[str] = None
+
+
+class FilerData(BaseModel):
+    """The informant or applicant who filed the document."""
+
+    name: Optional[str] = None
+    relationship: Optional[Literal["surviving_spouse", "adult_child", "executor", "other"]] = None
+    address: Optional[str] = None
+
+    @field_validator("relationship", mode="before")
+    @classmethod
+    def _normalize(cls, v: object) -> Optional[str]:
+        if v is None:
+            return None
+        _MAP = {
+            "spouse": "surviving_spouse", "wife": "surviving_spouse",
+            "husband": "surviving_spouse", "son": "adult_child",
+            "daughter": "adult_child", "child": "adult_child",
+            "personal representative": "executor", "executor": "executor",
+        }
+        return _MAP.get(str(v).lower().strip(), "other")
+
+
+class CertificateData(BaseModel):
+    """Top-level extraction result from a death certificate document."""
+
+    deceased: DeceasedData = Field(default_factory=DeceasedData)
+    filer: FilerData = Field(default_factory=FilerData)
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
 

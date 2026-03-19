@@ -38,11 +38,55 @@ def _date_long_to_iso(value: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Relationship normalisation and flattening helpers
+# ---------------------------------------------------------------------------
+
+_RELATIONSHIP_MAP: dict[str, str] = {
+    "spouse": "surviving_spouse", "wife": "surviving_spouse",
+    "husband": "surviving_spouse", "son": "adult_child",
+    "daughter": "adult_child", "child": "adult_child",
+    "personal representative": "executor", "executor": "executor",
+}
+
+
+def _normalize_relationship(raw: str) -> str:
+    """Normalize a free-form relationship string to the filer relationship enum.
+
+    Args:
+        raw: Free-form relationship string from a ground truth record.
+
+    Returns:
+        One of 'surviving_spouse', 'adult_child', 'executor', or 'other'.
+    """
+    return _RELATIONSHIP_MAP.get(raw.lower().strip(), "other")
+
+
+def _flatten(d: dict, prefix: str = "") -> dict:
+    """Flatten a nested dict to dot-notation keys for field-level scoring.
+
+    Args:
+        d: Dict that may contain nested dicts as values.
+        prefix: Accumulated key prefix from parent levels.
+
+    Returns:
+        Flat dict with keys like 'deceased.full_name', 'filer.relationship'.
+    """
+    out: dict = {}
+    for k, v in d.items():
+        full_key = f"{prefix}.{k}" if prefix else k
+        if isinstance(v, dict):
+            out.update(_flatten(v, full_key))
+        else:
+            out[full_key] = v
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Per-template projection functions
 # ---------------------------------------------------------------------------
 
 def _project_texas_mail_application(example: dict) -> dict:
-    """Project a texas_mail_application entry to flat CertificateData fields.
+    """Project a texas_mail_application entry to nested CertificateData fields.
 
     cause_of_death and surviving_spouse are excluded — they do not appear on
     this form type and omitting them avoids unfair scoring penalties.
@@ -51,71 +95,91 @@ def _project_texas_mail_application(example: dict) -> dict:
         example: One entry from the template's 'examples' list.
 
     Returns:
-        Dict of flat fields comparable to CertificateData output.
+        Nested dict comparable to CertificateData output.
     """
     d = example["decedent"]
     a = example["applicant"]
     return {
-        "deceased_full_name": f"{d['first_name']} {d['middle_name']} {d['last_name']}",
-        "date_of_birth": _date_slash_to_iso(d["date_of_birth"]),
-        "date_of_death": _date_slash_to_iso(d["date_of_death"]),
-        "ssn_last4": d["ssn"].replace("-", "")[-4:],
-        "county": d["place_of_death_county"],
-        "state": a["state"],
-        "filer_relationship": a["relationship"],
+        "deceased": {
+            "full_name": f"{d['first_name']} {d['middle_name']} {d['last_name']}",
+            "date_of_birth": _date_slash_to_iso(d["date_of_birth"]),
+            "date_of_death": _date_slash_to_iso(d["date_of_death"]),
+            "ssn_last4": d["ssn"].replace("-", "")[-4:],
+            "county": d["place_of_death_county"],
+            "state": a["state"],
+        },
+        "filer": {
+            "name": a["name"],
+            "relationship": _normalize_relationship(a["relationship"]),
+            "address": f"{a['street_address']}, {a['city']}, {a['state']} {a['zip_code']}",
+        },
     }
 
 
 def _project_georgia_death_certificate(example: dict) -> dict:
-    """Project a georgia_death_certificate entry to flat CertificateData fields.
+    """Project a georgia_death_certificate entry to nested CertificateData fields.
 
     Args:
         example: One entry from the template's 'examples' list.
 
     Returns:
-        Dict of flat fields comparable to CertificateData output.
+        Nested dict comparable to CertificateData output.
     """
     d = example["decedent"]
+    inf = example["informant"]
     return {
-        "deceased_full_name": d["legal_full_name"],
-        "date_of_birth": _date_slash_to_iso(d["date_of_birth"]),
-        "date_of_death": _date_slash_to_iso(d["date_of_death"]),
-        "ssn_last4": d["ssn"].replace("-", "")[-4:],
-        "county": example["place_of_death"]["county"],
-        "state": d["residence"]["state"],
-        "filer_relationship": example["informant"]["relationship"],
-        "cause_of_death": example["cause_of_death"]["immediate_cause_a"],
-        "surviving_spouse": d.get("surviving_spouse"),
+        "deceased": {
+            "full_name": d["legal_full_name"],
+            "date_of_birth": _date_slash_to_iso(d["date_of_birth"]),
+            "date_of_death": _date_slash_to_iso(d["date_of_death"]),
+            "ssn_last4": d["ssn"].replace("-", "")[-4:],
+            "county": example["place_of_death"]["county"],
+            "state": d["residence"]["state"],
+            "cause_of_death": example["cause_of_death"]["immediate_cause_a"],
+            "surviving_spouse": d.get("surviving_spouse"),
+        },
+        "filer": {
+            "name": inf["name"],
+            "relationship": _normalize_relationship(inf["relationship"]),
+            "address": inf["mailing_address"],
+        },
     }
 
 
 def _project_florida_death_certificate_application(example: dict) -> dict:
-    """Project a florida_death_certificate_application entry to flat CertificateData fields.
+    """Project a florida_death_certificate_application entry to nested CertificateData fields.
 
     cause_of_death is excluded — it does not appear on this form type.
+    filer.address is excluded — the Florida ground truth has no single address field.
 
     Args:
         example: One entry from the template's 'examples' list.
 
     Returns:
-        Dict of flat fields comparable to CertificateData output.
+        Nested dict comparable to CertificateData output.
     """
     ds = example["death_search"]
+    a = example["applicant"]
     # place_of_death_city_county format: "City, <County Name> County"
     county = ds["place_of_death_city_county"].split(", ", 1)[1].rsplit(" County", 1)[0]
     return {
-        "deceased_full_name": ds["full_name_on_record"],
-        "date_of_birth": _date_slash_to_iso(ds["date_of_birth"]),
-        "date_of_death": _date_slash_to_iso(ds["date_of_death"]),
-        "ssn_last4": ds["ssn"].replace("-", "")[-4:],
-        "county": county,
-        "state": example["applicant"]["state"],
-        "filer_relationship": example["applicant"]["relationship_to_decedent"],
+        "deceased": {
+            "full_name": ds["full_name_on_record"],
+            "date_of_birth": _date_slash_to_iso(ds["date_of_birth"]),
+            "date_of_death": _date_slash_to_iso(ds["date_of_death"]),
+            "ssn_last4": ds["ssn"].replace("-", "")[-4:],
+            "county": county,
+            "state": a["state"],
+        },
+        "filer": {
+            "name": a["name"],
+            "relationship": _normalize_relationship(a["relationship_to_decedent"]),
+        },
     }
 
 
 def _project_cdc_us_standard_certificate_of_death(example: dict) -> dict:
-    """Project a cdc_us_standard_certificate_of_death entry to flat CertificateData fields.
+    """Project a cdc_us_standard_certificate_of_death entry to nested CertificateData fields.
 
     CDC stores dates as 'Month D, YYYY' (e.g. 'March 3, 1952'), not MM/DD/YYYY.
 
@@ -123,45 +187,58 @@ def _project_cdc_us_standard_certificate_of_death(example: dict) -> dict:
         example: One entry from the template's 'examples' list.
 
     Returns:
-        Dict of flat fields comparable to CertificateData output.
+        Nested dict comparable to CertificateData output.
     """
     d = example["decedent"]
     mc = example["medical_certification"]
+    inf = example["informant"]
     return {
-        "deceased_full_name": d["legal_name"],
-        "date_of_birth": _date_long_to_iso(d["date_of_birth"]),
-        "date_of_death": _date_long_to_iso(d["date_of_death"]),
-        "ssn_last4": d["ssn"].replace("-", "")[-4:],
-        "county": example["place_of_death"]["county"],
-        "state": d["residence"]["state"],
-        "filer_relationship": example["informant"]["relationship"],
-        "cause_of_death": mc["cause_of_death"]["part_1"][0]["cause"],
-        "surviving_spouse": d.get("surviving_spouse_name"),
+        "deceased": {
+            "full_name": d["legal_name"],
+            "date_of_birth": _date_long_to_iso(d["date_of_birth"]),
+            "date_of_death": _date_long_to_iso(d["date_of_death"]),
+            "ssn_last4": d["ssn"].replace("-", "")[-4:],
+            "county": example["place_of_death"]["county"],
+            "state": d["residence"]["state"],
+            "cause_of_death": mc["cause_of_death"]["part_1"][0]["cause"],
+            "surviving_spouse": d.get("surviving_spouse_name"),
+        },
+        "filer": {
+            "name": inf["name"],
+            "relationship": _normalize_relationship(inf["relationship"]),
+            "address": inf.get("mailing_address"),
+        },
     }
 
 
 def _project_california_court_order_delayed_registration(example: dict) -> dict:
-    """Project a california_court_order_delayed_registration entry to flat CertificateData fields.
+    """Project a california_court_order_delayed_registration entry to nested CertificateData fields.
 
     surviving_spouse is excluded — the JSON stores it as a nested object
     (first_name / middle_name / last_name_birth), not a plain string, so it
     cannot be compared directly to the model's string output.
+    filer.name and filer.address are excluded — not available in California ground truth.
 
     Args:
         example: One entry from the template's 'examples' list.
 
     Returns:
-        Dict of flat fields comparable to CertificateData output.
+        Nested dict comparable to CertificateData output.
     """
     d = example["decedent"]
+    inf = d["informant"]
     return {
-        "deceased_full_name": f"{d['first_name']} {d['middle_name']} {d['last_name']}",
-        "date_of_birth": _date_slash_to_iso(d["date_of_birth"]),
-        "date_of_death": _date_slash_to_iso(d["date_of_death"]),
-        "ssn_last4": d["ssn"].replace("-", "")[-4:],
-        "county": example["place_of_death"]["county"],
-        "state": d["residence"]["state"],
-        "filer_relationship": d["informant"]["relationship"],
+        "deceased": {
+            "full_name": f"{d['first_name']} {d['middle_name']} {d['last_name']}",
+            "date_of_birth": _date_slash_to_iso(d["date_of_birth"]),
+            "date_of_death": _date_slash_to_iso(d["date_of_death"]),
+            "ssn_last4": d["ssn"].replace("-", "")[-4:],
+            "county": example["place_of_death"]["county"],
+            "state": d["residence"]["state"],
+        },
+        "filer": {
+            "relationship": _normalize_relationship(inf["relationship"]),
+        },
     }
 
 
@@ -217,10 +294,20 @@ GROUND_TRUTH = _load_ground_truth()
 def score(extracted: dict, truth: dict) -> float:
     """Return fraction of truth fields matched exactly in extracted (0.0–1.0).
 
+    Flattens both dicts to dot-notation keys before comparison.
     'confidence' is excluded from scoring.
+
+    Args:
+        extracted: Nested dict returned by parse_certificate().
+        truth: Nested ground truth dict from a projector function.
+
+    Returns:
+        Float accuracy score between 0.0 and 1.0.
     """
-    fields = [k for k in truth if k != "confidence"]
-    hits = sum(1 for f in fields if extracted.get(f) == truth[f])
+    flat_extracted = _flatten(extracted)
+    flat_truth = _flatten(truth)
+    fields = [k for k in flat_truth if k != "confidence"]
+    hits = sum(1 for f in fields if flat_extracted.get(f) == flat_truth[f])
     return hits / len(fields)
 
 
@@ -252,17 +339,19 @@ if __name__ == "__main__":
             continue
 
         extracted = m["result"]
+        flat_extracted = _flatten(extracted)
+        flat_truth = _flatten(truth)
         s = score(extracted, truth)
         scores.append(s)
 
-        fields = [k for k in truth if k != "confidence"]
+        fields = [k for k in flat_truth if k != "confidence"]
         hits = int(s * len(fields))
 
         field_results = {
             f: {
-                "expected": truth[f],
-                "got": extracted.get(f),
-                "match": extracted.get(f) == truth[f],
+                "expected": flat_truth[f],
+                "got": flat_extracted.get(f),
+                "match": flat_extracted.get(f) == flat_truth[f],
             }
             for f in fields
         }
@@ -291,9 +380,9 @@ if __name__ == "__main__":
         # stdout — same format as before
         print(f"{filename}: {s:.0%}  ({hits}/{len(fields)} fields)")
         for field in fields:
-            got = extracted.get(field)
-            tag = "OK" if got == truth[field] else "FAIL"
-            print(f"  {tag}  {field}: expected={truth[field]!r}  got={got!r}")
+            got = flat_extracted.get(field)
+            tag = "OK" if got == flat_truth[field] else "FAIL"
+            print(f"  {tag}  {field}: expected={flat_truth[field]!r}  got={got!r}")
 
     if scores:
         overall = sum(scores) / len(scores)
