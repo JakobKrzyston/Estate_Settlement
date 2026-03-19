@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{#
+  NOTE: Amazon's bereavement support operates primarily via email
+  (bereavement-support-cs@amazon.com) and their Help Center online form.
+  This template is formatted as a letter but should be treated as the
+  body text of that email. Subject line: "Bereavement Account Closure Request
+  — [Deceased Name] — [Account Email]"
+
+  VARIABLES REQUIRED (in addition to base.html shared variables):
+    account_email           — email address associated with the Amazon account
+
+  OPTIONAL:
+    has_gift_card_balance   — boolean; set true to include gift card balance inquiry
+    has_prime_membership    — boolean; set true to reference Prime cancellation/refund
+    has_pending_orders      — boolean; set true to request order cancellation
+    has_seller_account      — boolean; set true to add Amazon Seller note
+#}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>Amazon.com, Inc.</p>
+    <p>Bereavement Support Team</p>
+    <p>bereavement-support-cs@amazon.com</p>
+  </div>
+
+  <div class="re-line">
+    RE: Bereavement Account Closure Request &mdash; Account: {{ account_email }}
+    &mdash; Account Holder: {{ deceased_full_name }}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="body">
+
+  {# ── AUTHORITY STATEMENT ── #}
+  <p>
+    {% if sender_relationship == "surviving_spouse" %}
+    As the surviving spouse of {{ deceased_full_name }}, I am writing to request
+    the closure of their Amazon account (registered to {{ account_email }}) and
+    to resolve any outstanding balances, memberships, or pending activity
+    associated with that account.
+    {% elif sender_relationship == "executor" %}
+    As the Executor of the Estate of {{ deceased_full_name }}, I am authorized to
+    manage and close their digital accounts. I am requesting the closure of the
+    Amazon account registered to {{ account_email }}, effective as of the date of
+    death ({{ date_of_death }}), and the resolution of any associated account credits.
+    {% else %}
+    As an authorized representative of the estate of {{ deceased_full_name }},
+    I am requesting closure of the Amazon account registered to {{ account_email }}
+    and cancellation of all associated recurring services.
+    {% endif %}
+  </p>
+
+  {# ── ACCOUNT IDENTIFICATION ── #}
+  <div class="deceased-details">
+    <p><strong>Account Email:</strong> {{ account_email }}</p>
+    <p><strong>Account Holder:</strong> {{ deceased_full_name }}</p>
+    <p><strong>Date of Death:</strong> {{ date_of_death }}</p>
+  </div>
+
+  {# ── REQUESTS ── #}
+  <p>I am requesting the following actions:</p>
+  <p>
+    1.&nbsp;&nbsp;Permanently close the Amazon account registered to
+    {{ account_email }} and cease all recurring charges to any payment
+    method on file.<br>
+    {% if has_prime_membership %}
+    2.&nbsp;&nbsp;Cancel the Amazon Prime membership and advise whether
+    a prorated refund of any unused portion of the current billing
+    period is available to the estate.<br>
+    {% endif %}
+    {% if has_pending_orders %}
+    {{ 3 if has_prime_membership else 2 }}.&nbsp;&nbsp;Cancel any
+    pending or unshipped orders and refund the amounts to the estate.
+    Please advise how refunds will be processed in the absence of an
+    active account.<br>
+    {% endif %}
+    {% if has_gift_card_balance %}
+    {{ (3 if has_prime_membership else 2) + (1 if has_pending_orders else 0) }}.&nbsp;&nbsp;Advise
+    whether any Amazon Gift Card balance remaining on the account
+    is transferable to the estate, and provide the process for
+    doing so.<br>
+    {% endif %}
+    {{ "4" if (has_prime_membership and has_pending_orders) else "3" }}.&nbsp;&nbsp;Provide
+    written confirmation of account closure to the address above.
+  </p>
+
+  {# ── SELLER ACCOUNT NOTE ── #}
+  {% if has_seller_account %}
+  <p>
+    <strong>Regarding Amazon Seller Account:</strong>&nbsp; I understand
+    that the deceased may have held an Amazon Seller Central account
+    associated with this email address. Please advise on the process
+    for either closing the Seller account or transferring it to an
+    authorized representative of the business entity, and provide
+    the required documentation list for that process.
+  </p>
+  {% endif %}
+
+  {# ── DATA / CONTENT NOTE ── #}
+  <p>
+    I understand that account closure is permanent and that associated
+    digital content (Kindle books, photos, music) will be deleted.
+    Please confirm that we have an adequate window to download any
+    transferable content prior to the account being closed, and advise
+    on what content, if any, is eligible for download by an estate
+    representative.
+  </p>
+
+  {# ── DOCUMENTATION NOTE ── #}
+  <p>
+    A copy of the death certificate is attached to this communication.
+    {% if sender_relationship == "executor" %}
+    A copy of the Letters Testamentary is also attached to confirm my
+    authority to act on behalf of the estate.
+    {% endif %}
+    Please contact me at {{ sender_phone }} or at the address above
+    if additional verification is required.
+  </p>
+
+</div>
+{% endblock %}

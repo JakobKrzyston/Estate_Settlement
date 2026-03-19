@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{#
+  VARIABLES REQUIRED (in addition to base.html shared variables):
+    institution_name        — e.g. "MetLife", "New York Life Insurance Company"
+    institution_dept        — e.g. "Life Insurance Claims Department"
+    institution_address1
+    institution_address2
+    policy_number           — primary policy number
+    policy_type             — e.g. "term life", "whole life", "universal life", "group life"
+
+  OPTIONAL (for multiple policies):
+    additional_policies     — list of dicts: [{number: "...", type: "..."}]
+
+  OPTIONAL (claim context):
+    letters_testamentary_date
+    probate_court
+    estate_ein
+    policy_issue_date       — date policy was issued (flags contestability if recent)
+    death_was_accidental    — boolean; set true to reference AD&D inquiry
+    death_outside_us        — boolean; set true if death occurred abroad
+    group_policy            — boolean; set true if this is an employer group policy
+    employer_name           — required if group_policy is true
+#}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>{{ institution_name }}</p>
+    <p>{{ institution_dept }}</p>
+    <p>{{ institution_address1 }}</p>
+    <p>{{ institution_address2 }}</p>
+  </div>
+
+  <div class="re-line">
+    RE: Death Claim &mdash; Policy No. {{ policy_number }}
+    &mdash; Insured: {{ deceased_full_name }}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="body">
+
+  {# ── AUTHORITY STATEMENT ── #}
+  <p>
+    {% if sender_relationship == "surviving_spouse" %}
+    As the surviving spouse and named beneficiary of {{ deceased_full_name }},
+    I am writing to file a death claim under the above-referenced
+    {{ policy_type }} insurance policy and to request the applicable
+    claim forms and instructions.
+    {% elif sender_relationship == "executor" %}
+    As the duly appointed Executor of the Estate of {{ deceased_full_name }},
+    I am writing to file a death claim under the above-referenced policy
+    and to request distribution information.
+    {% if letters_testamentary_date and probate_court %}
+    Letters Testamentary were issued on {{ letters_testamentary_date }}
+    by the {{ probate_court }} and are enclosed.
+    {% else %}
+    Letters Testamentary are enclosed herewith.
+    {% endif %}
+    {% elif sender_relationship == "administrator" %}
+    As the court-appointed Administrator of the Estate of {{ deceased_full_name }},
+    I am writing to file a death claim and request all applicable distribution
+    forms. Letters of Administration are enclosed.
+    {% else %}
+    As an authorized representative of the beneficiary(ies) of the estate
+    of {{ deceased_full_name }}, I am writing to initiate the death claim
+    process under the policy referenced above.
+    {% endif %}
+  </p>
+
+  {# ── POLICY IDENTIFICATION ── #}
+  <div class="deceased-details">
+    <p><strong>Insured (Deceased):</strong> {{ deceased_full_name }}</p>
+    <p><strong>Policy Number:</strong> {{ policy_number }}</p>
+    <p><strong>Policy Type:</strong> {{ policy_type | title }}</p>
+    {% if group_policy and employer_name %}
+    <p><strong>Group Policy / Employer:</strong> {{ employer_name }}</p>
+    {% endif %}
+    <p><strong>Date of Death:</strong> {{ date_of_death }}</p>
+    {% if additional_policies %}
+    {% for pol in additional_policies %}
+    <p><strong>Additional Policy:</strong> No. {{ pol.number }} &mdash; {{ pol.type }}</p>
+    {% endfor %}
+    {% endif %}
+    {% if estate_ein %}
+    <p><strong>Estate EIN:</strong> {{ estate_ein }}</p>
+    {% endif %}
+  </div>
+
+  {# ── REQUESTS ── #}
+  <p>
+    I am requesting the following:
+  </p>
+  <p>
+    1.&nbsp;&nbsp;Please confirm receipt of this death notification and
+    provide your Claimant&rsquo;s Statement and any other required
+    claim forms at the address above.<br>
+    2.&nbsp;&nbsp;Please confirm the full death benefit amount and the
+    beneficiary designation(s) currently on file for policy no.
+    {{ policy_number }}
+    {% if additional_policies %}
+    and each additional policy listed above
+    {% endif %}.<br>
+    3.&nbsp;&nbsp;Advise on the available settlement options (lump sum,
+    installments, interest-bearing retention account) and provide the
+    applicable election form.
+    {% if sender_relationship == "executor" or sender_relationship == "administrator" %}
+    <br>4.&nbsp;&nbsp;If the estate is the named beneficiary or if no
+    living beneficiary is designated, please provide instructions for
+    distribution to the estate under the probate proceeding.
+    {% endif %}
+  </p>
+
+  {# ── ACCIDENTAL DEATH ── #}
+  {% if death_was_accidental %}
+  <p>
+    The decedent&rsquo;s death has been determined to be accidental.
+    Please advise whether the policy includes an Accidental Death
+    Benefit or Accidental Death &amp; Dismemberment (AD&amp;D) rider,
+    and include relevant claim forms if applicable.
+  </p>
+  {% endif %}
+
+  {# ── DEATH OUTSIDE U.S. ── #}
+  {% if death_outside_us %}
+  <p>
+    The decedent passed away outside the United States. I have obtained
+    an apostilled or authenticated copy of the foreign death certificate,
+    which is enclosed. Please advise whether a domestic translation or
+    additional documentation is required.
+  </p>
+  {% endif %}
+
+  {# ── CONTESTABILITY NOTE ── #}
+  {% if policy_issue_date %}
+  <p>
+    <em>Note:&nbsp; The policy was issued on {{ policy_issue_date }}.
+    If the date of death falls within a contestability period, please
+    advise promptly on any additional requirements or documentation
+    the claims department will need to process the claim.</em>
+  </p>
+  {% endif %}
+
+  {# ── ENCLOSURES NOTICE ── #}
+  <p>
+    Enclosed with this letter:
+    (1)&nbsp;Certified copy of death certificate;
+    {% if group_policy %}
+    (2)&nbsp;Copy of group enrollment or certificate of coverage (if available);
+    {% endif %}
+    {% if sender_relationship == "executor" or sender_relationship == "administrator" %}
+    ({{ 3 if group_policy else 2 }})&nbsp;Letters Testamentary /
+    Letters of Administration;
+    ({{ 4 if group_policy else 3 }})&nbsp;Copy of my government-issued photo identification.
+    {% elif sender_relationship == "surviving_spouse" %}
+    ({{ 3 if group_policy else 2 }})&nbsp;Copy of marriage certificate;
+    ({{ 4 if group_policy else 3 }})&nbsp;Copy of my government-issued photo identification.
+    {% else %}
+    ({{ 3 if group_policy else 2 }})&nbsp;Copy of my government-issued photo identification.
+    {% endif %}
+    Please forward the Claimant&rsquo;s Statement and any additional
+    required forms at your earliest convenience.
+  </p>
+
+</div>
+{% endblock %}

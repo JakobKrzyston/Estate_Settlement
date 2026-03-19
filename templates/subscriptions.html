@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{#
+  NOTE: This template is intentionally shorter and less formal than financial templates.
+  A photocopy of the death certificate is generally sufficient for subscription services.
+  Certified copies should not be wasted on these accounts.
+
+  VARIABLES REQUIRED (in addition to base.html shared variables):
+    institution_name        — e.g. "Spotify AB", "Netflix, Inc.", "Apple Inc."
+    institution_dept        — e.g. "Customer Support / Bereavement Team"
+    institution_address1    — if mailing (most will be email/online)
+    institution_address2
+
+  OPTIONAL:
+    account_email           — email address associated with the account
+    subscription_name       — e.g. "Spotify Premium", "Netflix Standard with Ads"
+    prepaid_balance_inquiry — boolean; set true to include refund request paragraph
+    apple_legacy_contact    — boolean; set true if sender is Apple Legacy Contact with access key
+#}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>{{ institution_name }}</p>
+    <p>{{ institution_dept }}</p>
+    {% if institution_address1 %}
+    <p>{{ institution_address1 }}</p>
+    <p>{{ institution_address2 }}</p>
+    {% endif %}
+  </div>
+
+  <div class="re-line">
+    RE: Account Closure Request &mdash; Deceased Account Holder
+    {% if account_email %}&mdash; {{ account_email }}{% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="body">
+
+  {# ── AUTHORITY STATEMENT (brief for subscription context) ── #}
+  <p>
+    {% if sender_relationship == "surviving_spouse" %}
+    As the surviving spouse of {{ deceased_full_name }}, I am writing to request
+    the closure of their {{ institution_name }} account
+    {% if account_email %}(registered to {{ account_email }}){% endif %}
+    and to cancel any recurring subscription billing effective immediately.
+    {% elif sender_relationship == "executor" %}
+    As the Executor of the Estate of {{ deceased_full_name }}, I am authorized
+    to manage and close the decedent&rsquo;s digital accounts. I am writing to
+    request closure of their {{ institution_name }} account
+    {% if account_email %}(registered to {{ account_email }}){% endif %}
+    and cancellation of all recurring billing.
+    {% else %}
+    As an authorized family member acting on behalf of the estate of
+    {{ deceased_full_name }}, I am requesting the closure of their
+    {{ institution_name }} account
+    {% if account_email %}(registered to {{ account_email }}){% endif %}
+    and cancellation of any active or pending subscription charges.
+    {% endif %}
+  </p>
+
+  {# ── SUBSCRIPTION DETAILS ── #}
+  {% if subscription_name %}
+  <div class="deceased-details">
+    <p><strong>Subscription:</strong> {{ subscription_name }}</p>
+    {% if account_email %}<p><strong>Account Email:</strong> {{ account_email }}</p>{% endif %}
+    <p><strong>Account Holder:</strong> {{ deceased_full_name }}</p>
+    <p><strong>Date of Death:</strong> {{ date_of_death }}</p>
+  </div>
+  {% endif %}
+
+  {# ── APPLE-SPECIFIC: LEGACY CONTACT ── #}
+  {% if apple_legacy_contact %}
+  <p>
+    I have been designated as a Legacy Contact for this Apple ID and hold
+    the associated access key. I am prepared to provide the access key
+    and the enclosed death certificate to verify my authorization and
+    complete the account transition process.
+  </p>
+  {% endif %}
+
+  {# ── REQUESTS ── #}
+  <p>
+    I ask that you:
+    (1)&nbsp;Cancel any active or auto-renewing subscription immediately;
+    (2)&nbsp;Stop all future billing to any payment method on file;
+    {% if prepaid_balance_inquiry %}
+    (3)&nbsp;Advise whether any prepaid subscription balance or unused credit
+    is refundable to the estate, and provide the applicable process; and
+    {% endif %}
+    ({{ 4 if prepaid_balance_inquiry else 3 }})&nbsp;Confirm account closure
+    in writing to the address above.
+  </p>
+
+  {# ── DOCUMENTATION NOTE ── #}
+  <p>
+    A copy of the death certificate is enclosed. Please advise if any
+    additional documentation is required to complete this request. I
+    can be reached at {{ sender_phone }} or by mail at the address above.
+  </p>
+
+</div>
+{% endblock %}

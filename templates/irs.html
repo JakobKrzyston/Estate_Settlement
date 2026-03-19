@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{#
+  IMPORTANT: The IRS does NOT want a separate death notification letter.
+  The notation "DECEASED" on the final Form 1040 constitutes notification.
+  This template serves as a COVER LETTER accompanying the final return
+  and/or Form 56 (Notice Concerning Fiduciary Relationship).
+
+  Mail to the IRS Service Center for your state of residence.
+  See Form 1040 instructions for the correct address.
+
+  VARIABLES REQUIRED (in addition to base.html shared variables):
+    deceased_ssn            — full SSN of the deceased (format: XXX-XX-XXXX)
+    tax_year                — tax year of the final return, e.g. "2024"
+    irs_service_center      — e.g. "Internal Revenue Service, Austin, TX 73301-0215"
+
+  OPTIONAL:
+    form_56_attached        — boolean; set true if Form 56 is enclosed
+    form_1310_attached      — boolean; set true if Form 1310 is enclosed
+    form_4810_attached      — boolean; set true if requesting prompt assessment
+    estate_ein              — Estate EIN if obtained
+    refund_due              — boolean; set true if a refund is expected
+    balance_due             — boolean; set true if a balance is due (payment note included)
+    prior_years_unfiled     — boolean; set true if prior years' returns are also enclosed
+#}
+
+{# ── OVERRIDE: IRS-SPECIFIC TITLE BLOCK ── #}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>Internal Revenue Service</p>
+    <p>{{ irs_service_center }}</p>
+  </div>
+
+  <div class="re-line">
+    RE: Final Individual Income Tax Return &mdash; Tax Year {{ tax_year }}
+    &mdash; Deceased Taxpayer: {{ deceased_full_name }}, SSN {{ deceased_ssn }}
+    {% if estate_ein %}&mdash; Estate EIN: {{ estate_ein }}{% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="body">
+
+  {# ── AUTHORITY STATEMENT ── #}
+  <p>
+    {% if sender_relationship == "surviving_spouse" %}
+    As the surviving spouse of {{ deceased_full_name }}, I am filing the final
+    individual income tax return (Form 1040) for the tax year ending
+    {{ tax_year }} on behalf of the decedent and myself as a joint filer.
+    I have signed the return in the signature area as &ldquo;Filing as
+    surviving spouse.&rdquo;
+    {% elif sender_relationship == "executor" %}
+    As the duly appointed Executor of the Estate of {{ deceased_full_name }},
+    I am authorized to file the final individual income tax return for the
+    tax year ending {{ tax_year }} on behalf of the decedent&rsquo;s estate.
+    {% elif sender_relationship == "administrator" %}
+    As the court-appointed Administrator of the Estate of {{ deceased_full_name }},
+    I am authorized to file the final individual income tax return for the
+    tax year ending {{ tax_year }} on behalf of the decedent&rsquo;s estate.
+    {% else %}
+    As the personal representative acting on behalf of the estate of
+    {{ deceased_full_name }}, I am filing the final individual income
+    tax return for the tax year ending {{ tax_year }}.
+    {% endif %}
+  </p>
+
+  {# ── TAXPAYER IDENTIFICATION ── #}
+  <div class="deceased-details">
+    <p><strong>Deceased Taxpayer:</strong> {{ deceased_full_name }}</p>
+    <p><strong>Social Security Number:</strong> {{ deceased_ssn }}</p>
+    <p><strong>Date of Death:</strong> {{ date_of_death }}</p>
+    <p><strong>Final Tax Year:</strong> {{ tax_year }}</p>
+    {% if estate_ein %}
+    <p><strong>Estate EIN:</strong> {{ estate_ein }}</p>
+    {% endif %}
+  </div>
+
+  {# ── RETURN NOTATION NOTE ── #}
+  <p>
+    The enclosed Form 1040 for tax year {{ tax_year }} has been marked
+    &ldquo;DECEASED &mdash; {{ deceased_full_name }} &mdash; {{ date_of_death }}&rdquo;
+    across the top of page 1 in accordance with IRS instructions. The
+    return reports all income received from January 1, {{ tax_year }}
+    through {{ date_of_death }}, and claims all eligible deductions
+    and credits for the period.
+  </p>
+
+  {# ── REFUND / BALANCE ── #}
+  {% if refund_due %}
+  <p>
+    A refund is indicated on this return. Form 1310, Statement of
+    Person Claiming Refund Due a Deceased Taxpayer, is enclosed
+    (where required) to authorize issuance of the refund to the
+    {% if sender_relationship == "surviving_spouse" %}surviving spouse{% else %}estate{% endif %}.
+    Please mail any refund check to the address above.
+  </p>
+  {% endif %}
+  {% if balance_due %}
+  <p>
+    A balance is due for tax year {{ tax_year }}.
+    {% if sender_relationship == "executor" or sender_relationship == "administrator" %}
+    Payment in the enclosed amount is made from estate funds. The
+    estate tax identification number (EIN) for remittance purposes
+    is {{ estate_ein if estate_ein else "[ESTATE EIN — obtain via Form SS-4 before filing]" }}.
+    {% else %}
+    Payment is enclosed herewith. Please apply to the decedent&rsquo;s
+    account under SSN {{ deceased_ssn }}.
+    {% endif %}
+  </p>
+  {% endif %}
+
+  {# ── PRIOR YEARS ── #}
+  {% if prior_years_unfiled %}
+  <p>
+    In addition to the tax year {{ tax_year }} return, enclosed are
+    returns for prior tax years that were not filed at the time of
+    the decedent&rsquo;s death. Each is marked &ldquo;DECEASED&rdquo;
+    and covers the period indicated on its face.
+  </p>
+  {% endif %}
+
+  {# ── ENCLOSURES LIST ── #}
+  <p>Enclosed with this letter:</p>
+  <p>
+    (1)&nbsp;Form 1040 &mdash; Final Individual Income Tax Return,
+    Tax Year {{ tax_year }}, marked &ldquo;DECEASED&rdquo;;
+    {% if form_56_attached %}
+    (2)&nbsp;Form 56 &mdash; Notice Concerning Fiduciary Relationship;
+    {% endif %}
+    {% if form_1310_attached %}
+    ({{ 3 if form_56_attached else 2 }})&nbsp;Form 1310 &mdash;
+    Statement of Person Claiming Refund Due a Deceased Taxpayer;
+    {% endif %}
+    {% if form_4810_attached %}
+    ({{ (3 if form_56_attached else 2) + (1 if form_1310_attached else 0) }})&nbsp;Form 4810 &mdash;
+    Request for Prompt Assessment Under IRC &sect;&nbsp;6501(d);
+    {% endif %}
+    {% if sender_relationship == "executor" or sender_relationship == "administrator" %}
+    ({{ "4" if (form_56_attached and form_1310_attached) else "3" }})&nbsp;Copy
+    of Letters Testamentary / Letters of Administration.
+    {% endif %}
+  </p>
+
+  {# ── NOTE: NO DEATH CERTIFICATE ── #}
+  <p>
+    <em>Note:&nbsp; Per IRS guidance, a separate death certificate is not required
+    to accompany a final individual income tax return. The notation on the return
+    itself constitutes notification of death. This cover letter is provided
+    solely to document the filing and the authority of the signatory.</em>
+  </p>
+
+</div>
+{% endblock %}

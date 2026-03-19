@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{#
+  VARIABLES REQUIRED (in addition to base.html shared variables):
+    institution_name        — e.g. "Fidelity Investments" or "Charles Schwab & Co., Inc."
+    institution_dept        — e.g. "Transition Services Department" / "Estate Distribution Team"
+    institution_address1    — street / P.O. box line
+    institution_address2    — city, state, zip
+    account_numbers         — list of strings, e.g. ["Z12-345678", "X98-765432"]
+    account_types           — list of strings matching account_numbers, e.g. ["Individual Brokerage", "Traditional IRA"]
+
+  OPTIONAL:
+    letters_testamentary_date — date Letters Testamentary were issued, e.g. "January 15, 2025"
+    probate_court             — full court name, e.g. "Superior Court of [County] County, [State]"
+    estate_ein                — Estate EIN if already obtained, e.g. "XX-XXXXXXX"
+#}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>{{ institution_name }}</p>
+    <p>{{ institution_dept }}</p>
+    <p>{{ institution_address1 }}</p>
+    <p>{{ institution_address2 }}</p>
+  </div>
+
+  <div class="re-line">
+    RE: Notice of Death &mdash; Account Holder {{ deceased_full_name }}
+    {% for acct in account_numbers %} &mdash; Account No. {{ acct }}{% endfor %}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="body">
+
+  {# ── AUTHORITY STATEMENT ── #}
+  <p>
+    {% if sender_relationship == "surviving_spouse" %}
+    As the surviving spouse of {{ deceased_full_name }}, I am the successor in interest
+    to the assets held in the account(s) referenced above and am authorized to act on
+    behalf of the estate in all matters related to these holdings.
+    {% elif sender_relationship == "executor" %}
+    As the duly appointed Executor of the Estate of {{ deceased_full_name }}, I have
+    legal authority to administer these accounts.
+    {% if letters_testamentary_date and probate_court %}
+    Letters Testamentary were issued on {{ letters_testamentary_date }} by the
+    {{ probate_court }} and are enclosed herewith.
+    {% else %}
+    A copy of the Letters Testamentary is enclosed herewith.
+    {% endif %}
+    {% elif sender_relationship == "administrator" %}
+    As the court-appointed Administrator of the Estate of {{ deceased_full_name }},
+    I have legal authority to administer these accounts. Letters of Administration
+    are enclosed herewith.
+    {% else %}
+    As an authorized representative of the family of {{ deceased_full_name }}, I am
+    acting on behalf of the estate in connection with the account(s) referenced above.
+    {% endif %}
+  </p>
+
+  {# ── ACCOUNT LIST ── #}
+  <p>
+    The following account(s) held at {{ institution_name }} are associated with
+    the decedent and require your immediate attention:
+  </p>
+  <div class="deceased-details">
+    {% for i in range(account_numbers|length) %}
+    <p><strong>Account {{ loop.index }}:</strong>
+      No. {{ account_numbers[i] }}
+      {% if account_types[i] %}&mdash; {{ account_types[i] }}{% endif %}
+    </p>
+    {% endfor %}
+    {% if estate_ein %}
+    <p><strong>Estate EIN:</strong> {{ estate_ein }}</p>
+    {% endif %}
+  </div>
+
+  {# ── REQUEST ── #}
+  <p>
+    I respectfully request that you take the following actions:
+  </p>
+  <p>
+    1.&nbsp;&nbsp;Immediately restrict or freeze the above account(s) to prevent
+    unauthorized access or transactions.<br>
+    2.&nbsp;&nbsp;Provide a current account statement and valuation as of the
+    date of death ({{ date_of_death }}) for each account, which may be required
+    for estate tax and probate purposes.<br>
+    3.&nbsp;&nbsp;Forward your institution&rsquo;s estate transfer or beneficiary
+    claim packet, including all required forms, to the address above.<br>
+    {% if sender_relationship == "surviving_spouse" %}
+    4.&nbsp;&nbsp;Provide information on the process to re-title or roll over any
+    IRA or retirement assets into my name as surviving spouse.
+    {% else %}
+    4.&nbsp;&nbsp;Confirm the name(s) of any designated beneficiary on file for
+    each account and advise on the appropriate distribution process.
+    {% endif %}
+  </p>
+
+  {# ── ENCLOSURES NOTICE ── #}
+  <p>
+    Enclosed with this letter:
+    (1)&nbsp;Certified copy of death certificate;
+    {% if sender_relationship == "executor" or sender_relationship == "administrator" %}
+    (2)&nbsp;Letters Testamentary / Letters of Administration;
+    (3)&nbsp;Copy of my government-issued photo identification.
+    {% elif sender_relationship == "surviving_spouse" %}
+    (2)&nbsp;Copy of our marriage certificate;
+    (3)&nbsp;Copy of my government-issued photo identification.
+    {% else %}
+    (2)&nbsp;Copy of my government-issued photo identification.
+    {% endif %}
+    Please advise if any additional documentation is required.
+  </p>
+
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{#
+  VARIABLES REQUIRED (in addition to base.html shared variables):
+    institution_name        — e.g. "Suncoast Credit Union", "Navy Federal Credit Union"
+    institution_dept        — e.g. "Member Services / Estate Department"
+    institution_address1
+    institution_address2
+    account_numbers         — list of strings
+    account_types           — list of strings matching account_numbers
+
+  OPTIONAL:
+    member_number           — credit union member number (often separate from account numbers)
+    letters_testamentary_date
+    probate_court
+    estate_ein
+#}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>{{ institution_name }}</p>
+    <p>{{ institution_dept }}</p>
+    <p>{{ institution_address1 }}</p>
+    <p>{{ institution_address2 }}</p>
+  </div>
+
+  <div class="re-line">
+    RE: Notice of Death &mdash; Member {{ deceased_full_name }}
+    {% if member_number %}&mdash; Member No. {{ member_number }}{% endif %}
+    {% for acct in account_numbers %}&mdash; Account No. {{ acct }}{% endfor %}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="body">
+
+  {# ── AUTHORITY STATEMENT ── #}
+  <p>
+    {% if sender_relationship == "surviving_spouse" %}
+    As the surviving spouse of {{ deceased_full_name }}, I am authorized to act
+    on behalf of the estate with respect to all accounts held at {{ institution_name }}.
+    {% elif sender_relationship == "executor" %}
+    As the duly appointed Executor of the Estate of {{ deceased_full_name }}, I have
+    full legal authority to administer and close any accounts held at {{ institution_name }}.
+    {% if letters_testamentary_date and probate_court %}
+    Letters Testamentary were issued on {{ letters_testamentary_date }} by the
+    {{ probate_court }} and are enclosed.
+    {% else %}
+    Letters Testamentary are enclosed herewith.
+    {% endif %}
+    {% elif sender_relationship == "administrator" %}
+    As the court-appointed Administrator of the Estate of {{ deceased_full_name }},
+    I have legal authority to administer all accounts at {{ institution_name }}.
+    Letters of Administration are enclosed.
+    {% else %}
+    As an authorized representative of the family of {{ deceased_full_name }},
+    I am acting on behalf of the estate in connection with the account(s) listed below.
+    {% endif %}
+  </p>
+
+  {# ── ACCOUNT LIST ── #}
+  <div class="deceased-details">
+    {% if member_number %}
+    <p><strong>Member Number:</strong> {{ member_number }}</p>
+    {% endif %}
+    {% for i in range(account_numbers|length) %}
+    <p><strong>Account {{ loop.index }}:</strong>
+      No. {{ account_numbers[i] }}
+      {% if account_types[i] %}&mdash; {{ account_types[i] }}{% endif %}
+    </p>
+    {% endfor %}
+    {% if estate_ein %}
+    <p><strong>Estate EIN:</strong> {{ estate_ein }}</p>
+    {% endif %}
+  </div>
+
+  {# ── REQUESTS ── #}
+  <p>
+    I respectfully request that {{ institution_name }} take the following
+    actions at the earliest practicable time:
+  </p>
+  <p>
+    1.&nbsp;&nbsp;Place a hold or freeze on all accounts listed above to prevent
+    further transactions pending estate settlement.<br>
+    2.&nbsp;&nbsp;Provide a statement of all account balances and any accrued
+    interest as of {{ date_of_death }}.<br>
+    3.&nbsp;&nbsp;Confirm the beneficiary designations (Payable on Death or
+    Transfer on Death) on file for each account, if any.<br>
+    4.&nbsp;&nbsp;Forward any required claim or estate distribution forms so that
+    the account(s) may be lawfully closed and funds disbursed to the appropriate
+    beneficiary or to the estate.
+  </p>
+
+  {# ── JOINT ACCOUNT NOTE ── #}
+  {% if sender_relationship == "surviving_spouse" %}
+  <p>
+    If any account was held jointly with right of survivorship, please advise
+    on the process to remove the decedent&rsquo;s name and transfer sole
+    ownership to the surviving account holder.
+  </p>
+  {% endif %}
+
+  {# ── ENCLOSURES NOTICE ── #}
+  <p>
+    Enclosed with this letter:
+    (1)&nbsp;Certified copy of death certificate;
+    {% if sender_relationship == "executor" or sender_relationship == "administrator" %}
+    (2)&nbsp;Letters Testamentary / Letters of Administration;
+    (3)&nbsp;Copy of my government-issued photo identification.
+    {% elif sender_relationship == "surviving_spouse" %}
+    (2)&nbsp;Copy of our marriage certificate;
+    (3)&nbsp;Copy of my government-issued photo identification.
+    {% else %}
+    (2)&nbsp;Copy of my government-issued photo identification.
+    {% endif %}
+    Please advise whether a Small Estate Affidavit or any additional documentation
+    is required under applicable state law.
+  </p>
+
+</div>
+{% endblock %}

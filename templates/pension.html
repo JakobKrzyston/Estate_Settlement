@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{#
+  VARIABLES REQUIRED (in addition to base.html shared variables):
+    institution_name        — e.g. "California Public Employees' Retirement System (CalPERS)"
+                              / "Fidelity Workplace Services (Plan Administrator)"
+    institution_dept        — e.g. "Pension Benefits / Survivor Benefits Department"
+    institution_address1
+    institution_address2
+    plan_name               — e.g. "ABC Corp 401(k) Plan", "State Teachers Retirement Plan"
+    participant_id          — employee ID, member number, or plan participant ID
+    employer_name           — employing organization that sponsored the plan
+
+  OPTIONAL:
+    plan_type               — e.g. "401(k)", "pension", "defined benefit", "403(b)"
+    letters_testamentary_date
+    probate_court
+    estate_ein
+    deceased_was_retired    — boolean; set true if participant was already receiving benefits
+    benefits_were_active    — boolean; set true if retirement payments were ongoing at death
+    optional_forms_period   — boolean; set true if ERISA QJ&SA rules may apply
+                              (relevant when participant was vested but not yet retired)
+#}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>{{ institution_name }}</p>
+    <p>{{ institution_dept }}</p>
+    <p>{{ institution_address1 }}</p>
+    <p>{{ institution_address2 }}</p>
+  </div>
+
+  <div class="re-line">
+    RE: Notice of Death &mdash; Plan Participant {{ deceased_full_name }}
+    &mdash; Participant ID: {{ participant_id }}
+    &mdash; Plan: {{ plan_name }}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="body">
+
+  {# ── AUTHORITY STATEMENT ── #}
+  <p>
+    {% if sender_relationship == "surviving_spouse" %}
+    As the surviving spouse of {{ deceased_full_name }}, a participant in the
+    {{ plan_name }} administered by {{ institution_name }}, I am writing to
+    notify you of their passing and to inquire about survivor benefits and
+    any death benefit that may be payable under the plan.
+    {% elif sender_relationship == "executor" %}
+    As the duly appointed Executor of the Estate of {{ deceased_full_name }},
+    a participant in the {{ plan_name }}, I am writing to notify you of their
+    passing and to request information on any death benefit or remaining account
+    balance payable to the estate or designated beneficiary.
+    {% if letters_testamentary_date and probate_court %}
+    Letters Testamentary were issued on {{ letters_testamentary_date }} by the
+    {{ probate_court }} and are enclosed herewith.
+    {% else %}
+    Letters Testamentary are enclosed herewith.
+    {% endif %}
+    {% elif sender_relationship == "administrator" %}
+    As the court-appointed Administrator of the Estate of {{ deceased_full_name }},
+    a plan participant, I am writing to notify you of their passing and to
+    request all applicable benefit and distribution information.
+    Letters of Administration are enclosed.
+    {% else %}
+    As an authorized representative of the beneficiary(ies) of the estate
+    of {{ deceased_full_name }}, I am writing to notify you of their passing
+    and to request information on any benefits payable under the above plan.
+    {% endif %}
+  </p>
+
+  {# ── PARTICIPANT IDENTIFICATION ── #}
+  <div class="deceased-details">
+    <p><strong>Participant (Deceased):</strong> {{ deceased_full_name }}</p>
+    <p><strong>Participant / Member ID:</strong> {{ participant_id }}</p>
+    <p><strong>Plan Name:</strong> {{ plan_name }}</p>
+    {% if plan_type %}<p><strong>Plan Type:</strong> {{ plan_type }}</p>{% endif %}
+    <p><strong>Employer / Plan Sponsor:</strong> {{ employer_name }}</p>
+    <p><strong>Date of Death:</strong> {{ date_of_death }}</p>
+    {% if estate_ein %}<p><strong>Estate EIN:</strong> {{ estate_ein }}</p>{% endif %}
+  </div>
+
+  {# ── ACTIVE BENEFITS NOTE ── #}
+  {% if deceased_was_retired and benefits_were_active %}
+  <p>
+    The decedent was retired and receiving periodic benefit payments at the
+    time of death. Please advise on the disposition of any payment made for
+    the period that includes or follows {{ date_of_death }}, the process for
+    returning any overpayment, and whether a survivor annuity or continuation
+    benefit is payable under the plan&rsquo;s terms.
+  </p>
+  {% elif not deceased_was_retired %}
+  <p>
+    The decedent had not yet begun receiving retirement benefits at the time
+    of death. Please advise on the vested account balance or accrued benefit,
+    the designated beneficiary on file, and the process for claiming any
+    pre-retirement death benefit.
+  </p>
+  {% endif %}
+
+  {# ── ERISA / QJ&SA NOTE ── #}
+  {% if sender_relationship == "surviving_spouse" and optional_forms_period %}
+  <p>
+    As surviving spouse, I understand I may have a right to a Qualified
+    Pre-Retirement Survivor Annuity (QPSA) or other death benefit under
+    ERISA and the plan&rsquo;s terms. Please confirm my rights under the
+    plan and provide all applicable election forms and deadlines.
+  </p>
+  {% endif %}
+
+  {# ── REQUESTS ── #}
+  <p>
+    I respectfully request the following from {{ institution_name }}:
+  </p>
+  <p>
+    1.&nbsp;&nbsp;Acknowledge receipt of this notice and confirm the
+    beneficiary designation(s) currently on file for this participant.<br>
+    2.&nbsp;&nbsp;Provide a statement of the participant&rsquo;s vested
+    account balance or accrued benefit as of {{ date_of_death }}.<br>
+    3.&nbsp;&nbsp;Forward your institution&rsquo;s Beneficiary Claim Form
+    and any other required forms to the address above.<br>
+    4.&nbsp;&nbsp;Advise on available distribution options, including
+    lump-sum, rollover to an Inherited IRA, or annuity, and any
+    applicable deadlines for electing among those options.<br>
+    5.&nbsp;&nbsp;Confirm whether any tax withholding elections are
+    required and provide the applicable forms.
+  </p>
+
+  {# ── ROLLOVER NOTE ── #}
+  {% if sender_relationship == "surviving_spouse" %}
+  <p>
+    As surviving spouse, I wish to understand my option to roll over the
+    inherited balance to my own IRA or to an Inherited (Spousal) IRA.
+    Please include information on both options and advise on any timing
+    constraints that may affect this election.
+  </p>
+  {% endif %}
+
+  {# ── ENCLOSURES NOTICE ── #}
+  <p>
+    Enclosed with this letter:
+    (1)&nbsp;Certified copy of death certificate;
+    {% if sender_relationship == "executor" or sender_relationship == "administrator" %}
+    (2)&nbsp;Letters Testamentary / Letters of Administration;
+    (3)&nbsp;Copy of my government-issued photo identification.
+    {% elif sender_relationship == "surviving_spouse" %}
+    (2)&nbsp;Copy of our marriage certificate;
+    (3)&nbsp;Copy of my government-issued photo identification.
+    {% else %}
+    (2)&nbsp;Copy of my government-issued photo identification.
+    {% endif %}
+    Please advise if any additional documentation is required to
+    initiate the claims process.
+  </p>
+
+</div>
+{% endblock %}

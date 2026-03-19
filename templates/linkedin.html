@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{#
+  NOTE: LinkedIn has NO mailing address for this process.
+  All requests are submitted via their online Help Center form:
+    - Memorialize: linkedin.com/help/linkedin/ask/ts-rdmlp
+    - Close:       linkedin.com/help/linkedin/ask/ts-rmdmlp
+  This template serves as a REFERENCE DOCUMENT / companion record
+  of the submission, and can be attached as supporting documentation
+  if LinkedIn's system allows file uploads during the request.
+
+  VARIABLES REQUIRED (in addition to base.html shared variables):
+    profile_url             — full URL to the LinkedIn profile
+    account_email           — email address registered to the LinkedIn account
+    action_requested        — "memorialize" or "close"
+
+  OPTIONAL:
+    linkedin_premium        — boolean; set true if account has a paid Premium subscription
+    premium_payment_source  — e.g. "American Express ending 1234" (for billing stoppage)
+#}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>LinkedIn Corporation</p>
+    <p>Trust &amp; Safety / Member Support</p>
+    <p>1000 West Maude Avenue</p>
+    <p>Sunnyvale, CA 94085</p>
+    <p><em>Request submitted via: linkedin.com/help/linkedin/ask/ts-{{ "rdmlp" if action_requested == "memorialize" else "rmdmlp" }}</em></p>
+  </div>
+
+  <div class="re-line">
+    RE: Request to {{ action_requested | title }} LinkedIn Profile &mdash;
+    {{ deceased_full_name }} &mdash; {{ profile_url }}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="body">
+
+  {# ── AUTHORITY STATEMENT ── #}
+  <p>
+    {% if sender_relationship == "surviving_spouse" %}
+    As the surviving spouse of {{ deceased_full_name }}, I am submitting this
+    request to {{ action_requested }} their LinkedIn profile
+    ({{ profile_url }}), registered to {{ account_email }}.
+    {% elif sender_relationship == "executor" %}
+    As the duly appointed Executor of the Estate of {{ deceased_full_name }},
+    I am authorized to manage the decedent&rsquo;s digital accounts and
+    online presence. I am requesting that LinkedIn {{ action_requested }}
+    the profile at {{ profile_url }}, registered to {{ account_email }}.
+    {% elif sender_relationship == "administrator" %}
+    As the court-appointed Administrator of the Estate of {{ deceased_full_name }},
+    I am requesting that LinkedIn {{ action_requested }} the profile at
+    {{ profile_url }}, registered to {{ account_email }}.
+    {% else %}
+    As an immediate family member of {{ deceased_full_name }}, I am requesting
+    that LinkedIn {{ action_requested }} the profile at {{ profile_url }},
+    registered to {{ account_email }}, and confirm that the account will no
+    longer be active or publicly searchable.
+    {% endif %}
+  </p>
+
+  {# ── PROFILE IDENTIFICATION ── #}
+  <div class="deceased-details">
+    <p><strong>Member Name:</strong> {{ deceased_full_name }}</p>
+    <p><strong>Profile URL:</strong> {{ profile_url }}</p>
+    <p><strong>Account Email:</strong> {{ account_email }}</p>
+    <p><strong>Date of Death:</strong> {{ date_of_death }}</p>
+    <p><strong>Action Requested:</strong> {{ action_requested | title }}</p>
+  </div>
+
+  {# ── ACTION-SPECIFIC LANGUAGE ── #}
+  {% if action_requested == "memorialize" %}
+  <p>
+    Memorialization will preserve {{ deceased_full_name }}&rsquo;s professional
+    legacy on LinkedIn while preventing new login attempts, blocking the profile
+    from appearing in &ldquo;People You May Know&rdquo; recommendations, and
+    adding the &ldquo;In Remembrance&rdquo; designation to the profile. This
+    is consistent with the wishes of the family.
+  </p>
+  {% else %}
+  <p>
+    Permanent closure and deletion of the profile is requested. I understand
+    that this action will remove the profile from LinkedIn&rsquo;s platform
+    within approximately 21 days of approval and is irreversible.
+    This is consistent with the wishes of the estate.
+  </p>
+  {% endif %}
+
+  {# ── PREMIUM SUBSCRIPTION BILLING ── #}
+  {% if linkedin_premium %}
+  <p>
+    <strong>Premium Subscription:</strong>&nbsp; The deceased held a LinkedIn
+    Premium subscription
+    {% if premium_payment_source %}billed to {{ premium_payment_source }}{% endif %}.
+    I request that any active Premium subscription be cancelled immediately
+    upon processing of this request and that no further charges be applied.
+    Please confirm whether any unused prepaid Premium balance is refundable.
+  </p>
+  {% endif %}
+
+  {# ── DOCUMENTATION ── #}
+  <p>
+    The following documentation is attached to or submitted alongside this
+    request in accordance with LinkedIn&rsquo;s requirements:
+  </p>
+  <p>
+    (1)&nbsp;Certified copy of death certificate;
+    {% if sender_relationship == "executor" or sender_relationship == "administrator" %}
+    (2)&nbsp;Letters Testamentary / Letters of Administration confirming
+    authority to act on behalf of the estate.
+    {% elif sender_relationship == "surviving_spouse" %}
+    (2)&nbsp;Marriage certificate confirming relationship to the deceased member.
+    {% else %}
+    (2)&nbsp;Documentation establishing relationship to the deceased member
+    (as applicable).
+    {% endif %}
+  </p>
+
+  {# ── CONFIRMATION REQUEST ── #}
+  <p>
+    Please confirm receipt and the expected processing timeline.
+    I understand that LinkedIn does not disclose login credentials
+    under any circumstances, and I am not requesting them.
+    I ask only for written confirmation that the profile has been
+    {{ "memorialized" if action_requested == "memorialize" else "closed and removed" }}
+    and that all recurring billing has ceased.
+  </p>
+
+</div>
+{% endblock %}

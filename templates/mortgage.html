@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{#
+  VARIABLES REQUIRED (in addition to base.html shared variables):
+    institution_name        — e.g. "Mr. Cooper (Nationstar Mortgage LLC)"
+    institution_dept        — e.g. "Loss Mitigation / Successor in Interest Department"
+    institution_address1
+    institution_address2
+    loan_number             — mortgage loan number
+    property_address        — full address of the mortgaged property
+
+  OPTIONAL:
+    property_relationship   — e.g. "joint owner with right of survivorship"
+                              / "sole heir and beneficiary under the will"
+    letters_testamentary_date
+    probate_court
+    currently_delinquent    — boolean; set true to include payment status note
+    requesting_assumption   — boolean; set true to include assumption request
+#}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>{{ institution_name }}</p>
+    <p>{{ institution_dept }}</p>
+    <p>{{ institution_address1 }}</p>
+    <p>{{ institution_address2 }}</p>
+  </div>
+
+  <div class="re-line">
+    RE: Notice of Death of Borrower &mdash; Loan No. {{ loan_number }}
+    &mdash; Property: {{ property_address }}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="body">
+
+  {# ── AUTHORITY AND SUCCESSOR-IN-INTEREST CLAIM ── #}
+  <p>
+    {% if sender_relationship == "surviving_spouse" %}
+    As the surviving spouse of {{ deceased_full_name }} and a
+    {% if property_relationship %}{{ property_relationship }}{% else %}successor in interest{% endif %}
+    with respect to the above-referenced property, I am writing to formally
+    notify you of the borrower&rsquo;s death and to assert my rights as a
+    confirmed successor in interest under applicable federal law.
+    {% elif sender_relationship == "executor" %}
+    As the duly appointed Executor of the Estate of {{ deceased_full_name }},
+    I am writing to formally notify you of the borrower&rsquo;s death and to
+    open communication regarding the mortgage loan referenced above.
+    {% if letters_testamentary_date and probate_court %}
+    Letters Testamentary were issued on {{ letters_testamentary_date }} by the
+    {{ probate_court }} and are enclosed herewith.
+    {% else %}
+    Letters Testamentary are enclosed herewith.
+    {% endif %}
+    {% elif sender_relationship == "administrator" %}
+    As the court-appointed Administrator of the Estate of {{ deceased_full_name }},
+    I am writing to formally notify you of the borrower&rsquo;s death.
+    Letters of Administration are enclosed.
+    {% else %}
+    As an authorized representative of the estate of {{ deceased_full_name }},
+    I am writing to formally notify you of the borrower&rsquo;s death with
+    respect to the mortgage loan referenced above.
+    {% endif %}
+  </p>
+
+  {# ── LOAN IDENTIFICATION ── #}
+  <div class="deceased-details">
+    <p><strong>Loan Number:</strong> {{ loan_number }}</p>
+    <p><strong>Mortgaged Property:</strong> {{ property_address }}</p>
+    <p><strong>Borrower (Deceased):</strong> {{ deceased_full_name }}</p>
+    <p><strong>Date of Death:</strong> {{ date_of_death }}</p>
+    {% if property_relationship %}
+    <p><strong>Claimant&rsquo;s Interest:</strong> {{ property_relationship }}</p>
+    {% endif %}
+  </div>
+
+  {# ── LEGAL RIGHTS NOTICE ── #}
+  <p>
+    Please be advised that, pursuant to 12 C.F.R. &sect;&nbsp;1024.38, you are
+    required to promptly identify and communicate with any successor in interest
+    upon notice of a borrower&rsquo;s death and to provide a written description
+    of documents required to confirm that person&rsquo;s identity and ownership
+    interest in the property. I am formally presenting myself as a potential
+    successor in interest and request that you initiate this process immediately.
+  </p>
+  <p>
+    Please further note that, under the Garn&ndash;St. Germain Depository
+    Institutions Act (12 U.S.C. &sect;&nbsp;1701j-3), you may not exercise any
+    due-on-sale clause as a result of this transfer by reason of death to a
+    relative of the borrower. The loan should continue to be serviced on its
+    existing terms during the estate settlement process.
+  </p>
+
+  {# ── REQUESTS ── #}
+  <p>
+    I respectfully request the following:
+  </p>
+  <p>
+    1.&nbsp;&nbsp;Acknowledge receipt of this death notification in writing.<br>
+    2.&nbsp;&nbsp;Provide a current loan statement showing outstanding balance,
+    interest rate, payment schedule, and any amounts past due as of {{ date_of_death }}.<br>
+    3.&nbsp;&nbsp;Provide a written description of all documents you require
+    to confirm my status as successor in interest, as required by
+    12 C.F.R. &sect;&nbsp;1024.38(b)(1)(vi)(B).<br>
+    {% if requesting_assumption %}
+    4.&nbsp;&nbsp;Provide information on the process for assuming this loan,
+    including any required assumption agreement or modification application.<br>
+    {% endif %}
+    {% if not requesting_assumption %}
+    4.&nbsp;&nbsp;Advise whether the estate has any options to modify or
+    refinance the existing loan terms.<br>
+    {% endif %}
+    5.&nbsp;&nbsp;Confirm that mortgage payments, if submitted during the
+    pendency of this notification, will be credited to the account and
+    will not be treated as waiving any rights of the estate.
+  </p>
+
+  {# ── PAYMENT STATUS NOTE ── #}
+  {% if currently_delinquent %}
+  <p>
+    I am aware that the account may have become past due. I am committed to
+    maintaining the property and resolving any arrearage, and I request that
+    no adverse action (including any foreclosure proceeding) be initiated
+    while this successor-in-interest determination is pending, consistent
+    with the servicer&rsquo;s obligations under 12 C.F.R. &sect;&nbsp;1024.41.
+  </p>
+  {% endif %}
+
+  {# ── ENCLOSURES NOTICE ── #}
+  <p>
+    Enclosed with this letter:
+    (1)&nbsp;Certified copy of death certificate;
+    {% if sender_relationship == "executor" or sender_relationship == "administrator" %}
+    (2)&nbsp;Letters Testamentary / Letters of Administration;
+    (3)&nbsp;Copy of recorded deed or title document evidencing ownership interest;
+    (4)&nbsp;Copy of my government-issued photo identification.
+    {% elif sender_relationship == "surviving_spouse" %}
+    (2)&nbsp;Copy of our marriage certificate;
+    (3)&nbsp;Copy of recorded deed or title document evidencing joint ownership;
+    (4)&nbsp;Copy of my government-issued photo identification.
+    {% else %}
+    (2)&nbsp;Copy of will or other document establishing interest in the property;
+    (3)&nbsp;Copy of my government-issued photo identification.
+    {% endif %}
+    I am prepared to provide any additional documentation upon request.
+  </p>
+
+</div>
+{% endblock %}

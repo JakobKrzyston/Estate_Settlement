@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{#
+  VARIABLES REQUIRED (in addition to base.html shared variables):
+    usaa_member_number          — USAA member number of the deceased
+    deceased_service_branch     — e.g. "United States Army", "United States Marine Corps"
+    deceased_service_dates      — e.g. "1982–2004"
+
+  OPTIONAL:
+    usaa_bank_account_numbers   — list of banking account numbers
+    usaa_policy_numbers         — list of insurance policy numbers
+    letters_testamentary_date   — if executor
+    probate_court               — if executor
+    estate_ein                  — Estate EIN if obtained
+#}
+
+{% block institution_header %}
+  <div class="institution-block">
+    <p>USAA</p>
+    <p>Survivor Relations / Bank Survivor Relations</p>
+    <p>9800 Fredericksburg Road</p>
+    <p>San Antonio, TX 78288</p>
+    <p><em>Fax: 1-800-292-8177 &mdash; Phone: 1-800-531-8722</em></p>
+  </div>
+
+  <div class="re-line">
+    RE: Notice of Death &mdash; USAA Member {{ deceased_full_name }},
+    Member No. {{ usaa_member_number }}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="body">
+
+  {# ── AUTHORITY STATEMENT ── #}
+  <p>
+    {% if sender_relationship == "surviving_spouse" %}
+    As the surviving spouse of {{ deceased_full_name }}, a {{ deceased_service_branch }}
+    veteran who served {{ deceased_service_dates }}, I am writing to notify USAA of their
+    passing and to initiate the survivor benefits and account transition process.
+    {% elif sender_relationship == "executor" %}
+    As the duly appointed Executor of the Estate of {{ deceased_full_name }}, a
+    {{ deceased_service_branch }} veteran who served {{ deceased_service_dates }},
+    I am writing to notify USAA of their passing and to begin the estate
+    settlement process for all USAA products and accounts.
+    {% if letters_testamentary_date and probate_court %}
+    Letters Testamentary were issued on {{ letters_testamentary_date }} by the
+    {{ probate_court }} and are enclosed herewith.
+    {% else %}
+    Letters Testamentary are enclosed herewith.
+    {% endif %}
+    {% elif sender_relationship == "administrator" %}
+    As the court-appointed Administrator of the Estate of {{ deceased_full_name }}, a
+    {{ deceased_service_branch }} veteran who served {{ deceased_service_dates }},
+    I am writing to notify USAA of their passing. Letters of Administration are enclosed.
+    {% else %}
+    As an authorized representative of the family of {{ deceased_full_name }}, a
+    {{ deceased_service_branch }} veteran who served {{ deceased_service_dates }},
+    I am writing to notify USAA of their passing and to request guidance on next steps
+    for all accounts and policies held with your institution.
+    {% endif %}
+  </p>
+
+  {# ── MEMBER IDENTIFICATION ── #}
+  <div class="deceased-details">
+    <p><strong>USAA Member Number:</strong> {{ usaa_member_number }}</p>
+    <p><strong>Branch of Service:</strong> {{ deceased_service_branch }}</p>
+    <p><strong>Service Dates:</strong> {{ deceased_service_dates }}</p>
+    {% if usaa_bank_account_numbers %}
+    <p><strong>Bank Account(s):</strong> {{ usaa_bank_account_numbers | join(", ") }}</p>
+    {% endif %}
+    {% if usaa_policy_numbers %}
+    <p><strong>Insurance Policy No(s):</strong> {{ usaa_policy_numbers | join(", ") }}</p>
+    {% endif %}
+    {% if estate_ein %}
+    <p><strong>Estate EIN:</strong> {{ estate_ein }}</p>
+    {% endif %}
+  </div>
+
+  {# ── REQUESTS ── #}
+  <p>
+    I respectfully request that you take the following actions across all USAA
+    product lines associated with the above member:
+  </p>
+  <p>
+    <strong>Banking:</strong>&nbsp; Freeze or close all checking, savings, and
+    certificate accounts. Please provide a complete list of accounts on file,
+    current balances as of {{ date_of_death }}, and your Letter of Instruction
+    (LOI) form for distribution of funds to the designated beneficiary or estate.
+  </p>
+  {% if usaa_policy_numbers %}
+  <p>
+    <strong>Insurance:</strong>&nbsp; Please initiate the death claims process
+    for all life insurance policies listed above. Forward the applicable claim
+    forms (Claimant&rsquo;s Statement) to the address above.
+  </p>
+  {% endif %}
+  <p>
+    <strong>Auto / Homeowners / Other Policies:</strong>&nbsp; Please advise
+    whether any auto, homeowners, or other insurance policies need to be
+    transferred, re-titled, or cancelled, and provide instructions for each.
+  </p>
+  {% if sender_relationship == "surviving_spouse" %}
+  <p>
+    As surviving spouse, I understand I may be eligible to retain USAA membership
+    and certain insurance coverage. Please confirm my continued membership status
+    and advise on any steps required to maintain coverage.
+  </p>
+  {% endif %}
+
+  {# ── ENCLOSURES NOTICE ── #}
+  <p>
+    Enclosed with this letter:
+    (1)&nbsp;Certified copy of death certificate;
+    {% if sender_relationship == "executor" or sender_relationship == "administrator" %}
+    (2)&nbsp;Letters Testamentary / Letters of Administration;
+    (3)&nbsp;Copy of my government-issued photo identification.
+    {% elif sender_relationship == "surviving_spouse" %}
+    (2)&nbsp;Copy of our marriage certificate;
+    (3)&nbsp;Copy of my government-issued photo identification.
+    {% else %}
+    (2)&nbsp;Copy of my government-issued photo identification.
+    {% endif %}
+    Please advise if your Survivor Relations team requires any additional forms
+    or documentation to proceed.
+  </p>
+
+</div>
+{% endblock %}
