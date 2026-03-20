@@ -20,22 +20,47 @@ const INSTITUTIONS = [
 
 const ALL_KEYS = INSTITUTIONS.map(i => i.key)
 
+const DECEASED_FIELDS = [
+  { key: 'full_name',        span: 2 },
+  { key: 'date_of_birth',    span: 1 },
+  { key: 'date_of_death',    span: 1 },
+  { key: 'ssn_last4',        span: 1 },
+  { key: 'county',           span: 1 },
+  { key: 'state',            span: 1 },
+  { key: 'cause_of_death',   span: 2 },
+  { key: 'surviving_spouse', span: 2 },
+]
+
+const FILER_FIELDS = [
+  { key: 'filer_name',         span: 1 },
+  { key: 'filer_relationship', span: 1 },
+  { key: 'filer_address',      span: 2 },
+]
+
 function flattenParsed(data) {
   const d = data.deceased || {}
   const f = data.filer || {}
-  return {
-    full_name:          d.full_name        || '',
-    date_of_birth:      d.date_of_birth    || '',
-    date_of_death:      d.date_of_death    || '',
-    ssn_last4:          d.ssn_last4        || '',
-    cause_of_death:     d.cause_of_death   || '',
-    county:             d.county           || '',
-    state:              d.state            || '',
-    surviving_spouse:   d.surviving_spouse || '',
-    filer_name:         f.name             || '',
-    filer_relationship: f.relationship     || '',
-    filer_address:      f.address          || '',
+  const fields = {
+    full_name:          d.full_name        ?? '',
+    date_of_birth:      d.date_of_birth    ?? '',
+    date_of_death:      d.date_of_death    ?? '',
+    ssn_last4:          d.ssn_last4        ?? '',
+    cause_of_death:     d.cause_of_death   ?? '',
+    county:             d.county           ?? '',
+    state:              d.state            ?? '',
+    surviving_spouse:   d.surviving_spouse ?? '',
+    filer_name:         f.name             ?? '',
+    filer_relationship: f.relationship     ?? '',
+    filer_address:      f.address          ?? '',
   }
+  const rawMap = {
+    full_name: d.full_name, date_of_birth: d.date_of_birth, date_of_death: d.date_of_death,
+    ssn_last4: d.ssn_last4, cause_of_death: d.cause_of_death, county: d.county,
+    state: d.state, surviving_spouse: d.surviving_spouse,
+    filer_name: f.name, filer_relationship: f.relationship, filer_address: f.address,
+  }
+  const lowConf = new Set(Object.entries(rawMap).filter(([, v]) => v == null).map(([k]) => k))
+  return { fields, lowConf }
 }
 
 function toLabel(key) {
@@ -54,6 +79,7 @@ export default function App() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState(null)
   const [fields, setFields]     = useState({})
+  const [lowConf, setLowConf]   = useState(new Set())
   const [selected, setSelected] = useState(new Set())
   const [letters, setLetters]   = useState(null)
   const [dragging, setDragging] = useState(false)
@@ -73,7 +99,9 @@ export default function App() {
         throw new Error(err.detail || res.statusText)
       }
       const data = await res.json()
-      setFields(flattenParsed(data))
+      const { fields: parsed, lowConf: lc } = flattenParsed(data)
+      setFields(parsed)
+      setLowConf(lc)
       setScreen(2)
     } catch (err) {
       setError(err.message)
@@ -168,9 +196,30 @@ export default function App() {
 
   // ── Screen 2: Review fields ─────────────────────────────────────────────────
   if (screen === 2) {
+    function FieldInput({ fieldKey }) {
+      const isLow = lowConf.has(fieldKey)
+      return (
+        <div>
+          <label className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">
+            {toLabel(fieldKey)}
+            {isLow && <span className="text-amber-400 text-sm leading-none" title="Low confidence — please verify">⚠</span>}
+          </label>
+          <input
+            value={fields[fieldKey]}
+            onChange={e => setFields(prev => ({ ...prev, [fieldKey]: e.target.value }))}
+            className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:border-flamingo transition ${
+              isLow
+                ? 'border-yellow-400 bg-yellow-50 focus:ring-yellow-200'
+                : 'border-gray-200 focus:ring-flamingo/30'
+            }`}
+          />
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-2xl mx-auto">
           <div className="mb-6">
             <div className="w-10 h-10 bg-flamingo rounded-xl mb-4" />
             <h1 className="text-3xl font-semibold text-gray-900 mb-1">
@@ -179,25 +228,32 @@ export default function App() {
             <p className="text-sm text-gray-500">Fix any mistakes before generating letters.</p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-            <div className="space-y-4">
-              {Object.entries(fields).map(([key, val]) => (
-                <div key={key}>
-                  <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">
-                    {toLabel(key)}
-                  </label>
-                  <input
-                    value={val}
-                    onChange={e => setFields(prev => ({ ...prev, [key]: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-flamingo/30 focus:border-flamingo transition"
-                  />
-                </div>
-              ))}
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Deceased</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {DECEASED_FIELDS.map(({ key, span }) => (
+                  <div key={key} className={span === 2 ? 'col-span-2' : ''}>
+                    <FieldInput fieldKey={key} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Filer</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {FILER_FIELDS.map(({ key, span }) => (
+                  <div key={key} className={span === 2 ? 'col-span-2' : ''}>
+                    <FieldInput fieldKey={key} />
+                  </div>
+                ))}
+              </div>
             </div>
 
             <button
               onClick={() => setScreen(3)}
-              className="mt-6 w-full bg-flamingo hover:bg-[#d94a1a] text-white font-medium text-sm py-2.5 rounded-lg transition-colors cursor-pointer"
+              className="w-full bg-flamingo hover:bg-[#d94a1a] text-white font-medium text-sm py-2.5 rounded-lg transition-colors cursor-pointer"
             >
               Looks good, continue →
             </button>
