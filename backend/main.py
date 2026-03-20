@@ -13,7 +13,7 @@ from jinja2 import TemplateNotFound
 from pydantic import BaseModel
 
 from doc_parser.extract import parse_certificate
-from doc_parser.generate import render_letter, render_to_pdf_bytes
+from doc_parser.generate import render_letter, render_to_docx_bytes, render_to_pdf_bytes
 
 app = FastAPI()
 
@@ -59,11 +59,19 @@ async def parse(file: UploadFile = File(...)) -> dict:
 class GenerateRequest(BaseModel):
     fields: dict
     institutions: list[str]
+    supplemental: dict = {}
 
 
 class ExportPdfRequest(BaseModel):
     institution: str
     fields: dict
+    supplemental: dict = {}
+
+
+class ExportDocxRequest(BaseModel):
+    institution: str
+    fields: dict
+    supplemental: dict = {}
 
 
 def _fields_to_vars(fields: dict) -> dict:
@@ -105,7 +113,7 @@ async def generate(req: GenerateRequest) -> dict:
     Returns:
         Dict with 'letters' mapping institution key → rendered HTML string.
     """
-    vars = _fields_to_vars(req.fields)
+    vars = {**_fields_to_vars(req.fields), **req.supplemental}
     letters = {}
     for inst in req.institutions:
         try:
@@ -136,7 +144,7 @@ async def export_pdf_endpoint(req: ExportPdfRequest) -> StreamingResponse:
     Raises:
         HTTPException: 404 if no template exists for the institution.
     """
-    vars = _fields_to_vars(req.fields)
+    vars = {**_fields_to_vars(req.fields), **req.supplemental}
     try:
         html = render_letter(req.institution, vars)
     except TemplateNotFound:
@@ -146,5 +154,32 @@ async def export_pdf_endpoint(req: ExportPdfRequest) -> StreamingResponse:
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.post("/export-docx")
+async def export_docx_endpoint(req: ExportDocxRequest) -> StreamingResponse:
+    """Render an institution letter as a DOCX and return it as a file download.
+
+    Args:
+        req: JSON body with 'institution' key, 'fields' flat dict, and optional 'supplemental' dict.
+
+    Returns:
+        DOCX file as a streaming response attachment.
+
+    Raises:
+        HTTPException: 404 if no template exists for the institution.
+    """
+    vars = {**_fields_to_vars(req.fields), **req.supplemental}
+    try:
+        html = render_letter(req.institution, vars)
+    except TemplateNotFound:
+        raise HTTPException(status_code=404, detail=f"No template for {req.institution!r}")
+    docx_bytes = render_to_docx_bytes(html)
+    filename = f"{req.institution}_letter.docx"
+    return StreamingResponse(
+        io.BytesIO(docx_bytes),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

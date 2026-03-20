@@ -66,6 +66,20 @@ def export_pdf(html_string: str, output_path: str) -> None:
         pisa.CreatePDF(html_string, dest=f)
 
 
+def render_to_docx_bytes(html_string: str) -> bytes:
+    """Convert rendered HTML to DOCX bytes via html2docx.
+
+    Args:
+        html_string: Fully rendered HTML content.
+
+    Returns:
+        DOCX content as bytes.
+    """
+    from html2docx import html2docx
+    buf = html2docx(html_string, title="Estate Notification Letter")
+    return buf.getvalue()
+
+
 def render_to_pdf_bytes(html_string: str) -> bytes:
     """Convert rendered HTML to PDF bytes via xhtml2pdf.
 

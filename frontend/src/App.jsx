@@ -1,5 +1,96 @@
 import { useState } from 'react'
 
+// Required supplemental fields per institution (only institutions that need them)
+const SUPPLEMENTAL_FIELDS = {
+  medicare: [
+    { key: 'medicare_beneficiary_id', label: 'Medicare Beneficiary ID' },
+  ],
+  irs: [
+    { key: 'tax_year', label: 'Tax Year (e.g. 2024)' },
+    { key: 'irs_service_center', label: 'IRS Service Center Address' },
+  ],
+  bank: [
+    { key: 'bank_name', label: 'Bank Name' },
+    { key: 'mailing_address_for_death_cert', label: 'Mailing Address (Estate Dept)' },
+    { key: 'account_numbers', label: 'Account Number(s)' },
+    { key: 'sender_capacity', label: 'Sender Capacity (e.g. Executor of the Estate)' },
+  ],
+  credit_union: [
+    { key: 'institution_name', label: 'Credit Union Name' },
+    { key: 'institution_dept', label: 'Department (e.g. Member Services / Estate Department)' },
+    { key: 'institution_address1', label: 'Address Line 1' },
+    { key: 'institution_address2', label: 'City, State ZIP' },
+    { key: 'account_numbers', label: 'Account Number(s)' },
+    { key: 'account_types', label: 'Account Type(s) (e.g. Checking, Savings)' },
+  ],
+  brokerage: [
+    { key: 'institution_name', label: 'Brokerage Name' },
+    { key: 'institution_dept', label: 'Department (e.g. Transition Services Department)' },
+    { key: 'institution_address1', label: 'Address Line 1' },
+    { key: 'institution_address2', label: 'City, State ZIP' },
+    { key: 'account_numbers', label: 'Account Number(s)' },
+    { key: 'account_types', label: 'Account Type(s) (e.g. Individual Brokerage, Traditional IRA)' },
+  ],
+  mortgage: [
+    { key: 'institution_name', label: 'Mortgage Servicer Name' },
+    { key: 'institution_dept', label: 'Department (e.g. Loss Mitigation / Successor in Interest Department)' },
+    { key: 'institution_address1', label: 'Address Line 1' },
+    { key: 'institution_address2', label: 'City, State ZIP' },
+    { key: 'loan_number', label: 'Loan Number' },
+    { key: 'property_address', label: 'Property Address' },
+  ],
+  life_insurance: [
+    { key: 'institution_name', label: 'Insurance Company Name' },
+    { key: 'institution_dept', label: 'Department (e.g. Life Insurance Claims Department)' },
+    { key: 'institution_address1', label: 'Address Line 1' },
+    { key: 'institution_address2', label: 'City, State ZIP' },
+    { key: 'policy_number', label: 'Policy Number' },
+    { key: 'policy_type', label: 'Policy Type (e.g. term life, whole life)' },
+  ],
+  pension: [
+    { key: 'institution_name', label: 'Plan Administrator Name' },
+    { key: 'institution_dept', label: 'Department (e.g. Pension Benefits / Survivor Benefits Department)' },
+    { key: 'institution_address1', label: 'Address Line 1' },
+    { key: 'institution_address2', label: 'City, State ZIP' },
+    { key: 'plan_name', label: 'Plan Name (e.g. ABC Corp 401(k) Plan)' },
+    { key: 'participant_id', label: 'Participant / Employee ID' },
+    { key: 'employer_name', label: 'Employer Name' },
+  ],
+  usaa: [
+    { key: 'usaa_member_number', label: 'USAA Member Number' },
+    { key: 'deceased_service_branch', label: 'Service Branch (e.g. United States Army)' },
+    { key: 'deceased_service_dates', label: 'Service Dates (e.g. 1982–2004)' },
+  ],
+  amazon: [
+    { key: 'account_email', label: 'Amazon Account Email' },
+  ],
+  linkedin: [
+    { key: 'profile_url', label: 'LinkedIn Profile URL' },
+    { key: 'account_email', label: 'Account Email' },
+    { key: 'action_requested', label: 'Action Requested (memorialize or close)' },
+  ],
+  subscriptions: [
+    { key: 'institution_name', label: 'Service / Company Name (e.g. Spotify AB)' },
+    { key: 'institution_dept', label: 'Department (e.g. Customer Support / Bereavement Team)' },
+    { key: 'institution_address1', label: 'Address Line 1' },
+    { key: 'institution_address2', label: 'City, State ZIP' },
+  ],
+  telecom: [
+    { key: 'telecom_company_name', label: 'Carrier Name (e.g. AT&T, Verizon)' },
+    { key: 'account_number', label: 'Account Number' },
+    { key: 'phone_numbers_on_account', label: 'Phone Number(s) on Account' },
+    { key: 'service_address', label: 'Service Address' },
+    { key: 'porting_or_cancel_preference', label: 'Line Disposition (e.g. Cancel all lines immediately.)' },
+    { key: 'forwarding_address', label: 'Forwarding Address for Final Bill' },
+  ],
+  utility: [
+    { key: 'utility_company_name', label: 'Utility Company Name (e.g. Duke Energy)' },
+    { key: 'account_number', label: 'Account Number' },
+    { key: 'service_address', label: 'Service Address' },
+    { key: 'forwarding_address', label: 'Forwarding Address for Final Bill' },
+  ],
+}
+
 const INSTITUTIONS = [
   { group: 'Government',           key: 'ssa',           label: 'Social Security Administration' },
   { group: 'Government',           key: 'medicare',      label: 'Medicare' },
@@ -105,6 +196,7 @@ export default function App() {
   const [letters, setLetters]             = useState(null)
   const [expandedLetter, setExpandedLetter] = useState(null)
   const [dragging, setDragging]           = useState(false)
+  const [supplemental, setSupplemental]   = useState({})
 
   async function processFile(file) {
     if (!file) return
@@ -142,7 +234,7 @@ export default function App() {
     const res = await fetch('/export-pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ institution, fields }),
+      body: JSON.stringify({ institution, fields, supplemental }),
     })
     if (!res.ok) return
     const blob = await res.blob()
@@ -156,6 +248,24 @@ export default function App() {
     setTimeout(() => URL.revokeObjectURL(url), 100)
   }
 
+  async function handleDownloadDocx(institution) {
+    const res = await fetch('/export-docx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ institution, fields, supplemental }),
+    })
+    if (!res.ok) return
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${institution}_letter.docx`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 100)
+  }
+
   async function handleGenerate() {
     setError(null)
     setLoading(true)
@@ -163,7 +273,7 @@ export default function App() {
       const res = await fetch('/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fields, institutions: [...selected] }),
+        body: JSON.stringify({ fields, institutions: [...selected], supplemental }),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -172,10 +282,20 @@ export default function App() {
       const data = await res.json()
       setLetters(data.letters)
       setExpandedLetter(Object.keys(data.letters)[0] ?? null)
+      setScreen(3)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  function handleRequestGenerate() {
+    const needsSupplemental = [...selected].some(k => SUPPLEMENTAL_FIELDS[k])
+    if (needsSupplemental) {
+      setScreen(3.5)
+    } else {
+      handleGenerate()
     }
   }
 
@@ -283,6 +403,71 @@ export default function App() {
     )
   }
 
+  // ── Screen 3.5: Supplemental fields per institution ─────────────────────────
+  if (screen === 3.5) {
+    const institutionsNeedingData = [...selected].filter(k => SUPPLEMENTAL_FIELDS[k])
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="mb-6">
+            <div className="w-10 h-10 bg-flamingo rounded-xl mb-4" />
+            <h1 className="text-3xl font-semibold text-gray-900 mb-1">
+              Institution Details
+            </h1>
+            <p className="text-sm text-gray-500">
+              Fill in the account and address details for each selected institution.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {institutionsNeedingData.map(instKey => {
+              const instLabel = INSTITUTIONS.find(i => i.key === instKey)?.label ?? instKey
+              const instFields = SUPPLEMENTAL_FIELDS[instKey]
+              return (
+                <div key={instKey} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                  <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+                    {instLabel}
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    {instFields.map(({ key, label }) => (
+                      <div key={key} className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">
+                          {label}
+                        </label>
+                        <input
+                          value={supplemental[key] ?? ''}
+                          onChange={e => setSupplemental(prev => ({ ...prev, [key]: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-flamingo/30 focus:border-flamingo transition"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setScreen(3)}
+                className="px-4 py-2.5 text-sm font-medium text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={handleGenerate}
+                disabled={loading}
+                className="flex-1 bg-flamingo hover:bg-[#d94a1a] disabled:bg-gray-100 disabled:text-gray-400 text-white font-medium text-sm py-2.5 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+              >
+                {loading ? 'Generating…' : 'Generate Letters →'}
+              </button>
+            </div>
+            {error && <p className="text-sm text-red-500">Error: {error}</p>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // ── Screen 3: Select institutions + generate ────────────────────────────────
   const grouped = groupBy(INSTITUTIONS, 'group')
   const allSelected = ALL_KEYS.every(k => selected.has(k))
@@ -376,7 +561,7 @@ export default function App() {
 
         <div className="p-4 border-t border-gray-100">
           <button
-            onClick={handleGenerate}
+            onClick={handleRequestGenerate}
             disabled={loading || selected.size === 0}
             className="w-full bg-flamingo hover:bg-[#d94a1a] disabled:bg-gray-100 disabled:text-gray-400 text-white font-medium text-sm py-2.5 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
           >
@@ -415,13 +600,22 @@ export default function App() {
                     </span>
                     <div className="flex items-center gap-4">
                       {isOpen && (
-                        <span
-                          role="button"
-                          onClick={e => { e.stopPropagation(); handleDownloadPdf(inst) }}
-                          className="text-xs font-medium text-flamingo hover:text-[#d94a1a] transition-colors"
-                        >
-                          Download PDF
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span
+                            role="button"
+                            onClick={e => { e.stopPropagation(); handleDownloadPdf(inst) }}
+                            className="text-xs font-medium text-flamingo hover:text-[#d94a1a] transition-colors"
+                          >
+                            Download PDF
+                          </span>
+                          <span
+                            role="button"
+                            onClick={e => { e.stopPropagation(); handleDownloadDocx(inst) }}
+                            className="text-xs font-medium text-flamingo hover:text-[#d94a1a] transition-colors"
+                          >
+                            Download DOCX
+                          </span>
+                        </div>
                       )}
                       <svg
                         className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}

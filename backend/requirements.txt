@@ -28,6 +28,7 @@ typing_extensions==4.15.0
 pymupdf>=1.26.0
 jinja2>=3.1
 xhtml2pdf>=0.2.11
+html2docx>=1.6.0
 fastapi>=0.115
 python-multipart>=0.0.12
 uvicorn[standard]>=0.34
