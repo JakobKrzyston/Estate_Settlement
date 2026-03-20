@@ -74,6 +74,27 @@ function groupBy(arr, key) {
   }, {})
 }
 
+function FieldInput({ fieldKey, fields, setFields, lowConf }) {
+  const isLow = lowConf.has(fieldKey)
+  return (
+    <div>
+      <label className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">
+        {toLabel(fieldKey)}
+        {isLow && <span className="text-amber-400 text-sm leading-none" title="Low confidence — please verify">⚠</span>}
+      </label>
+      <input
+        value={fields[fieldKey]}
+        onChange={e => setFields(prev => ({ ...prev, [fieldKey]: e.target.value }))}
+        className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:border-flamingo transition ${
+          isLow
+            ? 'border-yellow-400 bg-yellow-50 focus:ring-yellow-200'
+            : 'border-gray-200 focus:ring-flamingo/30'
+        }`}
+      />
+    </div>
+  )
+}
+
 export default function App() {
   const [screen, setScreen]     = useState(1)
   const [loading, setLoading]   = useState(false)
@@ -214,27 +235,6 @@ export default function App() {
 
   // ── Screen 2: Review fields ─────────────────────────────────────────────────
   if (screen === 2) {
-    function FieldInput({ fieldKey }) {
-      const isLow = lowConf.has(fieldKey)
-      return (
-        <div>
-          <label className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">
-            {toLabel(fieldKey)}
-            {isLow && <span className="text-amber-400 text-sm leading-none" title="Low confidence — please verify">⚠</span>}
-          </label>
-          <input
-            value={fields[fieldKey]}
-            onChange={e => setFields(prev => ({ ...prev, [fieldKey]: e.target.value }))}
-            className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:border-flamingo transition ${
-              isLow
-                ? 'border-yellow-400 bg-yellow-50 focus:ring-yellow-200'
-                : 'border-gray-200 focus:ring-flamingo/30'
-            }`}
-          />
-        </div>
-      )
-    }
-
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-2xl mx-auto">
@@ -252,7 +252,7 @@ export default function App() {
               <div className="grid grid-cols-2 gap-4">
                 {DECEASED_FIELDS.map(({ key, span }) => (
                   <div key={key} className={span === 2 ? 'col-span-2' : ''}>
-                    <FieldInput fieldKey={key} />
+                    <FieldInput fieldKey={key} fields={fields} setFields={setFields} lowConf={lowConf} />
                   </div>
                 ))}
               </div>
@@ -263,7 +263,7 @@ export default function App() {
               <div className="grid grid-cols-2 gap-4">
                 {FILER_FIELDS.map(({ key, span }) => (
                   <div key={key} className={span === 2 ? 'col-span-2' : ''}>
-                    <FieldInput fieldKey={key} />
+                    <FieldInput fieldKey={key} fields={fields} setFields={setFields} lowConf={lowConf} />
                   </div>
                 ))}
               </div>
