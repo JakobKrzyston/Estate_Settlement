@@ -56,9 +56,9 @@ export default function App() {
   const [fields, setFields]     = useState({})
   const [selected, setSelected] = useState(new Set())
   const [letters, setLetters]   = useState(null)
+  const [dragging, setDragging] = useState(false)
 
-  async function handleUpload(e) {
-    const file = e.target.files[0]
+  async function processFile(file) {
     if (!file) return
     setError(null)
     setLoading(true)
@@ -80,6 +80,12 @@ export default function App() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleDrop(e) {
+    e.preventDefault()
+    setDragging(false)
+    processFile(e.dataTransfer.files[0])
   }
 
   async function handleGenerate() {
@@ -120,26 +126,38 @@ export default function App() {
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-            <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-200 rounded-xl py-10 cursor-pointer hover:border-flamingo transition-colors">
-              <svg className="w-8 h-8 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span className="text-sm text-gray-400 mb-1">PDF, JPG, or PNG</span>
-              <span className="text-sm font-medium text-flamingo">Click to upload</span>
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={handleUpload}
-                disabled={loading}
-                className="hidden"
-              />
-            </label>
-
-            {loading && (
-              <p className="mt-4 text-sm text-gray-400 flex items-center gap-2">
-                <span className="inline-block animate-spin">⟳</span>
-                Parsing certificate...
-              </p>
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-3">
+                <svg className="animate-spin w-8 h-8 text-flamingo" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+                <p className="text-sm text-gray-500">Parsing certificate…</p>
+              </div>
+            ) : (
+              <label
+                className={`flex flex-col items-center justify-center w-full border-2 border-dashed rounded-xl py-10 cursor-pointer transition-colors ${
+                  dragging ? 'border-flamingo bg-orange-50' : 'border-gray-200 hover:border-flamingo'
+                }`}
+                onDragOver={e => { e.preventDefault(); setDragging(true) }}
+                onDragEnter={e => { e.preventDefault(); setDragging(true) }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={handleDrop}
+              >
+                <svg className="w-9 h-9 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span className="text-sm text-gray-600 mb-1">Drop death certificate here</span>
+                <span className="text-sm font-medium text-flamingo">or click to browse</span>
+                <span className="text-xs text-gray-400 mt-3">PDF or image · max 10 MB</span>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={e => processFile(e.target.files[0])}
+                  className="hidden"
+                />
+              </label>
             )}
             {error && <p className="mt-4 text-sm text-red-500">Error: {error}</p>}
           </div>
