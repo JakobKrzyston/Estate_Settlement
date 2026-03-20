@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/parse': 'http://localhost:8000',
+      '/generate': 'http://localhost:8000',
     },
   },
 })

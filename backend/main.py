@@ -1,4 +1,4 @@
-"""FastAPI app: /parse endpoint for death certificate extraction."""
+"""FastAPI app: /parse and /generate endpoints for death certificate extraction."""
 
 import os
 import tempfile
@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from doc_parser.extract import parse_certificate
 
@@ -48,3 +49,30 @@ async def parse(file: UploadFile = File(...)) -> dict:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     finally:
         os.unlink(tmp_path)
+
+
+class GenerateRequest(BaseModel):
+    fields: dict
+    institutions: list[str]
+
+
+@app.post("/generate")
+async def generate(req: GenerateRequest) -> dict:
+    """Accept confirmed certificate fields and institution list, return letter text.
+
+    Args:
+        req: JSON body with 'fields' (flat dict) and 'institutions' (list of keys).
+
+    Returns:
+        Dict with 'letters' mapping institution key → letter text.
+    """
+    letters = {}
+    for inst in req.institutions:
+        letters[inst] = (
+            f"[PLACEHOLDER] Letter for {inst} — [TODO: Implement template].\n\n"
+            f"Deceased: {req.fields.get('full_name')}\n"
+            f"Date of Death: {req.fields.get('date_of_death')}\n"
+            f"SSN Last 4: {req.fields.get('ssn_last4')}\n"
+            f"Filer: {req.fields.get('filer_name')} ({req.fields.get('filer_relationship')})"
+        )
+    return {"letters": letters}
