@@ -5,6 +5,7 @@ CLI: python -m doc_parser.generate
 """
 
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -76,7 +77,8 @@ def render_to_docx_bytes(html_string: str) -> bytes:
         DOCX content as bytes.
     """
     from html2docx import html2docx
-    buf = html2docx(html_string, title="Estate Notification Letter")
+    clean = re.sub(r"<style[^>]*>.*?</style>", "", html_string, flags=re.DOTALL | re.IGNORECASE)
+    buf = html2docx(clean, title="Estate Notification Letter")
     return buf.getvalue()
 
 
