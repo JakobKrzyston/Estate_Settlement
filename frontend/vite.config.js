@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       '/parse': 'http://localhost:8000',
       '/generate': 'http://localhost:8000',
+      '/export-pdf': 'http://localhost:8000',
     },
   },
 })

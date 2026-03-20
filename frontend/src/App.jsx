@@ -103,7 +103,7 @@ export default function App() {
   const [lowConf, setLowConf]   = useState(new Set())
   const [selected, setSelected] = useState(new Set())
   const [letters, setLetters]             = useState(null)
-  const [activeInstitution, setActiveInstitution] = useState(null)
+  const [expandedLetter, setExpandedLetter] = useState(null)
   const [dragging, setDragging]           = useState(false)
 
   async function processFile(file) {
@@ -138,20 +138,22 @@ export default function App() {
     processFile(e.dataTransfer.files[0])
   }
 
-  async function handleDownloadPdf() {
+  async function handleDownloadPdf(institution) {
     const res = await fetch('/export-pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ institution: activeInstitution, fields }),
+      body: JSON.stringify({ institution, fields }),
     })
     if (!res.ok) return
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${activeInstitution}_letter.pdf`
+    a.download = `${institution}_letter.pdf`
+    document.body.appendChild(a)
     a.click()
-    URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 100)
   }
 
   async function handleGenerate() {
@@ -169,7 +171,7 @@ export default function App() {
       }
       const data = await res.json()
       setLetters(data.letters)
-      setActiveInstitution(Object.keys(data.letters)[0] ?? null)
+      setExpandedLetter(Object.keys(data.letters)[0] ?? null)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -352,32 +354,20 @@ export default function App() {
                   {group}
                 </h3>
                 <div className="space-y-0.5">
-                  {items.map(({ key, label }) => {
-                    const hasLetter = letters?.[key]
-                    const isActive = activeInstitution === key && hasLetter
-                    return (
-                      <div
-                        key={key}
-                        onClick={() => hasLetter && setActiveInstitution(key)}
-                        className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors ${
-                          isActive
-                            ? 'bg-orange-50 text-[color:var(--color-flamingo)] font-medium'
-                            : hasLetter
-                            ? 'text-gray-700 hover:bg-gray-50 cursor-pointer'
-                            : 'text-gray-700'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selected.has(key)}
-                          onChange={() => toggleOne(key)}
-                          onClick={e => e.stopPropagation()}
-                          className="accent-flamingo w-4 h-4 flex-none"
-                        />
-                        <span className="text-sm">{label}</span>
-                      </div>
-                    )
-                  })}
+                  {items.map(({ key, label }) => (
+                    <div
+                      key={key}
+                      className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-gray-700"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected.has(key)}
+                        onChange={() => toggleOne(key)}
+                        className="accent-flamingo w-4 h-4 flex-none"
+                      />
+                      <span className="text-sm">{label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
@@ -410,32 +400,48 @@ export default function App() {
               <p className="text-sm text-gray-400">Select institutions and generate<br />letters to preview them here.</p>
             </div>
           </div>
-        ) : activeInstitution && letters[activeInstitution] ? (
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-                {toLabel(activeInstitution)}
-              </p>
-              <button
-                onClick={handleDownloadPdf}
-                className="text-xs font-medium text-flamingo hover:text-[#d94a1a] transition-colors cursor-pointer"
-              >
-                Download PDF
-              </button>
-            </div>
-            <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-              <iframe
-                key={activeInstitution}
-                srcDoc={letters[activeInstitution]}
-                title={`Letter — ${activeInstitution}`}
-                className="w-full"
-                style={{ height: '860px', border: 'none' }}
-              />
-            </div>
-          </div>
         ) : (
-          <div className="h-full flex items-center justify-center">
-            <p className="text-sm text-gray-400">Click an institution to preview its letter.</p>
+          <div className="max-w-2xl mx-auto space-y-3">
+            {Object.entries(letters).map(([inst, html]) => {
+              const isOpen = expandedLetter === inst
+              return (
+                <div key={inst} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <button
+                    onClick={() => setExpandedLetter(isOpen ? null : inst)}
+                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
+                      {toLabel(inst)}
+                    </span>
+                    <div className="flex items-center gap-4">
+                      {isOpen && (
+                        <span
+                          role="button"
+                          onClick={e => { e.stopPropagation(); handleDownloadPdf(inst) }}
+                          className="text-xs font-medium text-flamingo hover:text-[#d94a1a] transition-colors"
+                        >
+                          Download PDF
+                        </span>
+                      )}
+                      <svg
+                        className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <iframe
+                      srcDoc={html}
+                      title={`Letter — ${inst}`}
+                      className="w-full border-t border-gray-100"
+                      style={{ height: '860px', border: 'none', borderTop: '1px solid #f3f4f6' }}
+                    />
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
