@@ -307,6 +307,29 @@ export default function App() {
           <p className="text-xs text-gray-500 mt-0.5">Choose which organizations to notify.</p>
         </div>
 
+        {/* Hours saved stat bar */}
+        {selected.size > 0 && (
+          <div className="px-6 py-3 border-b border-gray-100 bg-orange-50">
+            <p className="text-xs font-medium text-gray-700 mb-1.5">
+              Generating{' '}
+              <span className="text-[color:var(--color-flamingo)] font-semibold">
+                {selected.size} {selected.size === 1 ? 'letter' : 'letters'}
+              </span>
+              {' · '}
+              Saving an estimated{' '}
+              <span className="text-[color:var(--color-flamingo)] font-semibold">
+                {selected.size * 1.5} hours
+              </span>
+            </p>
+            <div className="h-2 bg-orange-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[color:var(--color-flamingo)] rounded-full transition-all duration-300"
+                style={{ width: `${(selected.size / ALL_KEYS.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto p-4">
           <div
             className="flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer mb-2 border-b border-gray-100 pb-3"
