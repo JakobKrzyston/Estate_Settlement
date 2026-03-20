@@ -66,6 +66,22 @@ def export_pdf(html_string: str, output_path: str) -> None:
         pisa.CreatePDF(html_string, dest=f)
 
 
+def render_to_pdf_bytes(html_string: str) -> bytes:
+    """Convert rendered HTML to PDF bytes via xhtml2pdf.
+
+    Args:
+        html_string: Fully rendered HTML content.
+
+    Returns:
+        PDF content as bytes.
+    """
+    import io
+    from xhtml2pdf import pisa
+    buf = io.BytesIO()
+    pisa.CreatePDF(html_string, dest=buf)
+    return buf.getvalue()
+
+
 def _make_env() -> Environment:
     return Environment(
         loader=FileSystemLoader(str(_TEMPLATES_DIR)),

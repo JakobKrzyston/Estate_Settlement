@@ -1,5 +1,6 @@
 """FastAPI app: /parse and /generate endpoints for death certificate extraction."""
 
+import io
 import os
 import tempfile
 from datetime import datetime
@@ -7,11 +8,12 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from jinja2 import TemplateNotFound
 from pydantic import BaseModel
 
 from doc_parser.extract import parse_certificate
-from doc_parser.generate import render_letter
+from doc_parser.generate import render_letter, render_to_pdf_bytes
 
 app = FastAPI()
 
@@ -57,6 +59,11 @@ async def parse(file: UploadFile = File(...)) -> dict:
 class GenerateRequest(BaseModel):
     fields: dict
     institutions: list[str]
+
+
+class ExportPdfRequest(BaseModel):
+    institution: str
+    fields: dict
 
 
 def _fields_to_vars(fields: dict) -> dict:
@@ -114,3 +121,30 @@ async def generate(req: GenerateRequest) -> dict:
                 f"</body></html>"
             )
     return {"letters": letters}
+
+
+@app.post("/export-pdf")
+async def export_pdf_endpoint(req: ExportPdfRequest) -> StreamingResponse:
+    """Render an institution letter as a PDF and return it as a file download.
+
+    Args:
+        req: JSON body with 'institution' key and 'fields' flat dict.
+
+    Returns:
+        PDF file as a streaming response attachment.
+
+    Raises:
+        HTTPException: 404 if no template exists for the institution.
+    """
+    vars = _fields_to_vars(req.fields)
+    try:
+        html = render_letter(req.institution, vars)
+    except TemplateNotFound:
+        raise HTTPException(status_code=404, detail=f"No template for {req.institution!r}")
+    pdf_bytes = render_to_pdf_bytes(html)
+    filename = f"{req.institution}_letter.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

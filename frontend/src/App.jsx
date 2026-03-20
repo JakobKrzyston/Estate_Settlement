@@ -117,6 +117,22 @@ export default function App() {
     processFile(e.dataTransfer.files[0])
   }
 
+  async function handleDownloadPdf() {
+    const res = await fetch('/export-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ institution: activeInstitution, fields }),
+    })
+    if (!res.ok) return
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${activeInstitution}_letter.pdf`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   async function handleGenerate() {
     setError(null)
     setLoading(true)
@@ -373,9 +389,17 @@ export default function App() {
           </div>
         ) : activeInstitution && letters[activeInstitution] ? (
           <div className="max-w-2xl mx-auto">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-              {toLabel(activeInstitution)}
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                {toLabel(activeInstitution)}
+              </p>
+              <button
+                onClick={handleDownloadPdf}
+                className="text-xs font-medium text-flamingo hover:text-[#d94a1a] transition-colors cursor-pointer"
+              >
+                Download PDF
+              </button>
+            </div>
             <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
               <iframe
                 key={activeInstitution}
