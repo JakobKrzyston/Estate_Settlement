@@ -124,6 +124,14 @@ frontend/
 
 ## Output Format
 
+### Generated Letters (PDF / DOCX)
+
+For each institution selected, the app generates a personalized notification letter pre-filled with the deceased's name, dates, SSN last 4, and the filer's information. Letters can be downloaded individually as **PDF** or **DOCX** directly from the browser.
+
+Supported institutions: SSA, Medicare, IRS, bank, credit union, brokerage, mortgage, life insurance, pension, USAA, Amazon, LinkedIn, subscriptions, telecom, utility.
+
+### CLI Extraction Output
+
 Each line of `output/results.jsonl` is a JSON object:
 
 | Field | Type | Description |
