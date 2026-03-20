@@ -1,9 +1,19 @@
-# .gitignore
+# env & secrets
 .env
-.venv
-samples/
-output/
-metrics/
+
+# Python
+backend/.venv/
 __pycache__/
 *.pyc
+
+# Data & outputs
+backend/samples/
+backend/output/
+backend/metrics/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS
 .DS_Store

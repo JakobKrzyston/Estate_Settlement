@@ -8,12 +8,12 @@ from typing import Literal, Optional
 
 import anthropic
 import fitz  # pymupdf
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from pydantic import BaseModel, Field, field_validator
 
 from .prompts import EXTRACT_PROMPT
 
-load_dotenv()
+load_dotenv(find_dotenv())
 
 
 # ---------------------------------------------------------------------------
