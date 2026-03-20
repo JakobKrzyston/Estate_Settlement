@@ -81,8 +81,9 @@ export default function App() {
   const [fields, setFields]     = useState({})
   const [lowConf, setLowConf]   = useState(new Set())
   const [selected, setSelected] = useState(new Set())
-  const [letters, setLetters]   = useState(null)
-  const [dragging, setDragging] = useState(false)
+  const [letters, setLetters]             = useState(null)
+  const [activeInstitution, setActiveInstitution] = useState(null)
+  const [dragging, setDragging]           = useState(false)
 
   async function processFile(file) {
     if (!file) return
@@ -131,6 +132,7 @@ export default function App() {
       }
       const data = await res.json()
       setLetters(data.letters)
+      setActiveInstitution(Object.keys(data.letters)[0] ?? null)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -280,70 +282,113 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-md mx-auto">
-        <div className="mb-6">
-          <div className="w-10 h-10 bg-flamingo rounded-xl mb-4" />
-          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Select Institutions</h1>
-          <p className="text-sm text-gray-500">Choose which organizations to notify.</p>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Left panel — checklist */}
+      <div className="w-80 flex-none bg-white border-r border-gray-100 flex flex-col">
+        <div className="p-6 border-b border-gray-100">
+          <div className="w-8 h-8 bg-flamingo rounded-lg mb-3" />
+          <h1 className="text-lg font-semibold text-gray-900">Select Institutions</h1>
+          <p className="text-xs text-gray-500 mt-0.5">Choose which organizations to notify.</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-          <label className="flex items-center gap-2.5 text-sm font-medium text-gray-700 cursor-pointer mb-5 pb-4 border-b border-gray-100">
+        <div className="flex-1 overflow-y-auto p-4">
+          <div
+            className="flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer mb-2 border-b border-gray-100 pb-3"
+            onClick={toggleAll}
+          >
             <input
               type="checkbox"
               checked={allSelected}
               onChange={toggleAll}
-              className="accent-flamingo w-4 h-4"
+              onClick={e => e.stopPropagation()}
+              className="accent-flamingo w-4 h-4 flex-none"
             />
-            Select all
-          </label>
+            <span className="text-sm font-medium text-gray-700">Select all</span>
+          </div>
 
-          <div className="space-y-5">
+          <div className="space-y-4 mt-2">
             {Object.entries(grouped).map(([group, items]) => (
               <div key={group}>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2.5">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5 px-2">
                   {group}
                 </h3>
-                <div className="space-y-2.5">
-                  {items.map(({ key, label }) => (
-                    <label key={key} className="flex items-center gap-2.5 text-sm text-gray-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(key)}
-                        onChange={() => toggleOne(key)}
-                        className="accent-flamingo w-4 h-4"
-                      />
-                      {label}
-                    </label>
-                  ))}
+                <div className="space-y-0.5">
+                  {items.map(({ key, label }) => {
+                    const hasLetter = letters?.[key]
+                    const isActive = activeInstitution === key && hasLetter
+                    return (
+                      <div
+                        key={key}
+                        onClick={() => hasLetter && setActiveInstitution(key)}
+                        className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors ${
+                          isActive
+                            ? 'bg-orange-50 text-[color:var(--color-flamingo)] font-medium'
+                            : hasLetter
+                            ? 'text-gray-700 hover:bg-gray-50 cursor-pointer'
+                            : 'text-gray-700'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected.has(key)}
+                          onChange={() => toggleOne(key)}
+                          onClick={e => e.stopPropagation()}
+                          className="accent-flamingo w-4 h-4 flex-none"
+                        />
+                        <span className="text-sm">{label}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             ))}
           </div>
+        </div>
 
+        <div className="p-4 border-t border-gray-100">
           <button
             onClick={handleGenerate}
             disabled={loading || selected.size === 0}
-            className="mt-6 w-full bg-flamingo hover:bg-[#d94a1a] disabled:bg-gray-100 disabled:text-gray-400 text-white font-medium text-sm py-2.5 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="w-full bg-flamingo hover:bg-[#d94a1a] disabled:bg-gray-100 disabled:text-gray-400 text-white font-medium text-sm py-2.5 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
           >
-            {loading ? 'Generating...' : `Generate Letters (${selected.size})`}
+            {loading ? 'Generating…' : `Generate Letters (${selected.size})`}
           </button>
-
-          {error && <p className="mt-4 text-sm text-red-500">Error: {error}</p>}
+          {error && <p className="mt-2 text-xs text-red-500">Error: {error}</p>}
         </div>
+      </div>
 
-        {letters && (
-          <div className="mt-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Generated Letters</h2>
-            {Object.entries(letters).map(([inst, text]) => (
-              <div key={inst} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">{toLabel(inst)}</h3>
-                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono bg-gray-50 rounded-lg p-4">
-                  {text}
-                </pre>
+      {/* Right panel — letter preview */}
+      <div className="flex-1 overflow-y-auto p-8">
+        {!letters ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 mx-auto mb-4 flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
-            ))}
+              <p className="text-sm text-gray-400">Select institutions and generate<br />letters to preview them here.</p>
+            </div>
+          </div>
+        ) : activeInstitution && letters[activeInstitution] ? (
+          <div className="max-w-2xl mx-auto">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+              {toLabel(activeInstitution)}
+            </p>
+            <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+              <iframe
+                key={activeInstitution}
+                srcDoc={letters[activeInstitution]}
+                title={`Letter — ${activeInstitution}`}
+                className="w-full"
+                style={{ height: '860px', border: 'none' }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-sm text-gray-400">Click an institution to preview its letter.</p>
           </div>
         )}
       </div>

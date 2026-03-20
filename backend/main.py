@@ -2,13 +2,16 @@
 
 import os
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from jinja2 import TemplateNotFound
 from pydantic import BaseModel
 
 from doc_parser.extract import parse_certificate
+from doc_parser.generate import render_letter
 
 app = FastAPI()
 
@@ -56,23 +59,58 @@ class GenerateRequest(BaseModel):
     institutions: list[str]
 
 
+def _fields_to_vars(fields: dict) -> dict:
+    """Map the flat frontend fields dict to Jinja2 template variable names.
+
+    Args:
+        fields: Flat dict sent by the frontend (full_name, filer_name, etc.).
+
+    Returns:
+        Dict of template variable names expected by base.html and institution templates.
+    """
+    last4 = fields.get("ssn_last4", "")
+    full_name = fields.get("full_name", "")
+    return {
+        "deceased_full_name": full_name,
+        "account_holder_name": full_name,
+        "date_of_birth": fields.get("date_of_birth", ""),
+        "date_of_death": fields.get("date_of_death", ""),
+        "ssn_last4": last4,
+        "deceased_ssn": f"XXX-XX-{last4}" if last4 else "",
+        "county": fields.get("county", ""),
+        "state": fields.get("state", ""),
+        "surviving_spouse": fields.get("surviving_spouse", ""),
+        "sender_name": fields.get("filer_name", ""),
+        "sender_relationship": fields.get("filer_relationship", ""),
+        "sender_address": fields.get("filer_address", ""),
+        "sender_phone": "",
+        "date": datetime.now().strftime("%B %-d, %Y"),
+    }
+
+
 @app.post("/generate")
 async def generate(req: GenerateRequest) -> dict:
-    """Accept confirmed certificate fields and institution list, return letter text.
+    """Accept confirmed certificate fields and institution list, return rendered HTML letters.
 
     Args:
         req: JSON body with 'fields' (flat dict) and 'institutions' (list of keys).
 
     Returns:
-        Dict with 'letters' mapping institution key → letter text.
+        Dict with 'letters' mapping institution key → rendered HTML string.
     """
+    vars = _fields_to_vars(req.fields)
     letters = {}
     for inst in req.institutions:
-        letters[inst] = (
-            f"[PLACEHOLDER] Letter for {inst} — [TODO: Implement template].\n\n"
-            f"Deceased: {req.fields.get('full_name')}\n"
-            f"Date of Death: {req.fields.get('date_of_death')}\n"
-            f"SSN Last 4: {req.fields.get('ssn_last4')}\n"
-            f"Filer: {req.fields.get('filer_name')} ({req.fields.get('filer_relationship')})"
-        )
+        try:
+            letters[inst] = render_letter(inst, vars)
+        except TemplateNotFound:
+            name = inst.replace("_", " ").title()
+            letters[inst] = (
+                f"<!DOCTYPE html><html><head><style>"
+                f"body{{font-family:Georgia,serif;font-size:12pt;line-height:1.6;"
+                f"color:#111;max-width:680px;margin:60px auto;padding:0 40px;}}"
+                f"</style></head><body>"
+                f"<p><em>Letter template for <strong>{name}</strong> is coming soon.</em></p>"
+                f"</body></html>"
+            )
     return {"letters": letters}
