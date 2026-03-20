@@ -50,12 +50,12 @@ function groupBy(arr, key) {
 }
 
 export default function App() {
-  const [screen, setScreen]   = useState(1)
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState(null)
-  const [fields, setFields]   = useState({})
+  const [screen, setScreen]     = useState(1)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState(null)
+  const [fields, setFields]     = useState({})
   const [selected, setSelected] = useState(new Set())
-  const [letters, setLetters] = useState(null)
+  const [letters, setLetters]   = useState(null)
 
   async function handleUpload(e) {
     const file = e.target.files[0]
@@ -104,58 +104,92 @@ export default function App() {
     }
   }
 
-  const s = { padding: '2rem', fontFamily: 'sans-serif', maxWidth: 640 }
-
+  // ── Screen 1: Upload ────────────────────────────────────────────────────────
   if (screen === 1) {
     return (
-      <div style={s}>
-        <h1>Death Certificate Parser</h1>
-        <input
-          type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
-          onChange={handleUpload}
-          disabled={loading}
-        />
-        {loading && (
-          <p style={{ color: '#666' }}>
-            <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
-            {' '}Parsing certificate...
-          </p>
-        )}
-        {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="w-full max-w-md">
+          <div className="mb-6">
+            <div className="w-10 h-10 bg-flamingo rounded-xl mb-4" />
+            <h1 className="text-3xl font-semibold text-gray-900 mb-1">
+              Upload Death Certificate
+            </h1>
+            <p className="text-sm text-gray-500">
+              We'll extract the key details automatically.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+            <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-200 rounded-xl py-10 cursor-pointer hover:border-flamingo transition-colors">
+              <svg className="w-8 h-8 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span className="text-sm text-gray-400 mb-1">PDF, JPG, or PNG</span>
+              <span className="text-sm font-medium text-flamingo">Click to upload</span>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={handleUpload}
+                disabled={loading}
+                className="hidden"
+              />
+            </label>
+
+            {loading && (
+              <p className="mt-4 text-sm text-gray-400 flex items-center gap-2">
+                <span className="inline-block animate-spin">⟳</span>
+                Parsing certificate...
+              </p>
+            )}
+            {error && <p className="mt-4 text-sm text-red-500">Error: {error}</p>}
+          </div>
+        </div>
       </div>
     )
   }
 
+  // ── Screen 2: Review fields ─────────────────────────────────────────────────
   if (screen === 2) {
     return (
-      <div style={s}>
-        <h1>Review Extracted Fields</h1>
-        <p style={{ color: '#666' }}>Fix any mistakes before generating letters.</p>
-        {Object.entries(fields).map(([key, val]) => (
-          <div key={key} style={{ marginBottom: '0.75rem' }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 2 }}>
-              {toLabel(key)}
-            </label>
-            <input
-              value={val}
-              onChange={e => setFields(prev => ({ ...prev, [key]: e.target.value }))}
-              style={{ width: '100%', padding: '6px 8px', fontSize: 14, boxSizing: 'border-box' }}
-            />
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-md mx-auto">
+          <div className="mb-6">
+            <div className="w-10 h-10 bg-flamingo rounded-xl mb-4" />
+            <h1 className="text-3xl font-semibold text-gray-900 mb-1">
+              Review Extracted Fields
+            </h1>
+            <p className="text-sm text-gray-500">Fix any mistakes before generating letters.</p>
           </div>
-        ))}
-        <button
-          onClick={() => setScreen(3)}
-          style={{ marginTop: '1rem', padding: '8px 20px', fontSize: 15, cursor: 'pointer' }}
-        >
-          Looks good, continue →
-        </button>
+
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+            <div className="space-y-4">
+              {Object.entries(fields).map(([key, val]) => (
+                <div key={key}>
+                  <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">
+                    {toLabel(key)}
+                  </label>
+                  <input
+                    value={val}
+                    onChange={e => setFields(prev => ({ ...prev, [key]: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-flamingo/30 focus:border-flamingo transition"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setScreen(3)}
+              className="mt-6 w-full bg-flamingo hover:bg-[#d94a1a] text-white font-medium text-sm py-2.5 rounded-lg transition-colors cursor-pointer"
+            >
+              Looks good, continue →
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
 
-  // Screen 3
+  // ── Screen 3: Select institutions + generate ────────────────────────────────
   const grouped = groupBy(INSTITUTIONS, 'group')
   const allSelected = ALL_KEYS.every(k => selected.has(k))
 
@@ -172,51 +206,73 @@ export default function App() {
   }
 
   return (
-    <div style={s}>
-      <h1>Select Institutions</h1>
-      <label style={{ cursor: 'pointer', fontWeight: 'bold' }}>
-        <input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ marginRight: 6 }} />
-        Select all
-      </label>
-
-      {Object.entries(grouped).map(([group, items]) => (
-        <div key={group} style={{ marginTop: '1.5rem' }}>
-          <h3 style={{ margin: '0 0 0.5rem' }}>{group}</h3>
-          {items.map(({ key, label }) => (
-            <label key={key} style={{ display: 'block', cursor: 'pointer', marginBottom: 4 }}>
-              <input
-                type="checkbox"
-                checked={selected.has(key)}
-                onChange={() => toggleOne(key)}
-                style={{ marginRight: 6 }}
-              />
-              {label}
-            </label>
-          ))}
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-md mx-auto">
+        <div className="mb-6">
+          <div className="w-10 h-10 bg-flamingo rounded-xl mb-4" />
+          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Select Institutions</h1>
+          <p className="text-sm text-gray-500">Choose which organizations to notify.</p>
         </div>
-      ))}
 
-      <button
-        onClick={handleGenerate}
-        disabled={loading || selected.size === 0}
-        style={{ marginTop: '1.5rem', padding: '8px 20px', fontSize: 15, cursor: 'pointer' }}
-      >
-        {loading ? 'Generating...' : `Generate Letters (${selected.size})`}
-      </button>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+          <label className="flex items-center gap-2.5 text-sm font-medium text-gray-700 cursor-pointer mb-5 pb-4 border-b border-gray-100">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleAll}
+              className="accent-flamingo w-4 h-4"
+            />
+            Select all
+          </label>
 
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+          <div className="space-y-5">
+            {Object.entries(grouped).map(([group, items]) => (
+              <div key={group}>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2.5">
+                  {group}
+                </h3>
+                <div className="space-y-2.5">
+                  {items.map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2.5 text-sm text-gray-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(key)}
+                        onChange={() => toggleOne(key)}
+                        className="accent-flamingo w-4 h-4"
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
 
-      {letters && (
-        <div style={{ marginTop: '2rem' }}>
-          <h2>Generated Letters</h2>
-          {Object.entries(letters).map(([inst, text]) => (
-            <div key={inst} style={{ marginBottom: '2rem' }}>
-              <h3>{toLabel(inst)}</h3>
-              <pre style={{ background: '#f5f5f5', padding: '1rem', whiteSpace: 'pre-wrap' }}>{text}</pre>
-            </div>
-          ))}
+          <button
+            onClick={handleGenerate}
+            disabled={loading || selected.size === 0}
+            className="mt-6 w-full bg-flamingo hover:bg-[#d94a1a] disabled:bg-gray-100 disabled:text-gray-400 text-white font-medium text-sm py-2.5 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+          >
+            {loading ? 'Generating...' : `Generate Letters (${selected.size})`}
+          </button>
+
+          {error && <p className="mt-4 text-sm text-red-500">Error: {error}</p>}
         </div>
-      )}
+
+        {letters && (
+          <div className="mt-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Generated Letters</h2>
+            {Object.entries(letters).map(([inst, text]) => (
+              <div key={inst} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">{toLabel(inst)}</h3>
+                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono bg-gray-50 rounded-lg p-4">
+                  {text}
+                </pre>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
