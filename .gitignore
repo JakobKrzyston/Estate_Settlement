@@ -15,5 +15,11 @@ backend/metrics/
 frontend/node_modules/
 frontend/dist/
 
+# Testing
+.pytest_cache/
+
+# Packaging
+*.egg-info/
+
 # OS
 .DS_Store

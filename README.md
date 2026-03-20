@@ -1,103 +1,130 @@
 # Estate Settlement
 
-Extracts structured fields from death certificate PDFs using the Anthropic vision API. Given a PDF or image, the tool returns a validated JSON record containing key fields (name, dates, SSN last 4, county, surviving spouse, etc.) useful for estate administration workflows.
+Full-stack application that extracts structured fields from death certificate PDFs using Anthropic's vision API and generates notification letters for 15 institution types (SSA, Medicare, IRS, banks, insurance, utilities, and more).
+
+## Architecture
+
+- **Backend** — Python / FastAPI. Parses death certificate PDFs via Anthropic's vision API, renders notification letters from Jinja2 HTML templates, and exports to PDF or DOCX.
+- **Frontend** — React 19 + Vite + Tailwind CSS v4. Upload flow, extracted-field review and editing, institution selection, letter preview, and download.
 
 ## Setup
 
-**1. Install dependencies**
+### Prerequisites
+
+- Python 3.11+
+- Node.js 20+
+- An [Anthropic API key](https://console.anthropic.com/settings/keys)
+
+### Environment
+
+Copy the example env file and add your API key:
+
 ```bash
+cp .env.example .env
+# edit .env and set ANTHROPIC_API_KEY
+```
+
+### Backend
+
+```bash
+cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**2. Configure API key**
+### Frontend
 
-Create a `.env` file in the project root:
-```
-ANTHROPIC_API_KEY=sk-ant-...
-```
-
-## Usage
-
-**Extract from all sample PDFs (writes to `output/results.jsonl`):**
 ```bash
+cd frontend
+npm install
+```
+
+## Running
+
+### Development
+
+```bash
+# Terminal 1 — backend (from backend/)
+uvicorn main:app --reload
+
+# Terminal 2 — frontend (from frontend/)
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173).
+
+### Docker
+
+```bash
+docker compose up --build
+```
+
+The app is served at [http://localhost](http://localhost) (port 80). See [docker-compose.yml](docker-compose.yml) for details.
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/parse` | Upload a PDF or image, returns extracted certificate fields |
+| POST | `/generate` | Accept fields + institution list, returns rendered HTML letters |
+| POST | `/export-pdf` | Render a single letter as a PDF download |
+| POST | `/export-docx` | Render a single letter as a DOCX download |
+
+## CLI Tools
+
+The backend also exposes CLI entry points for batch processing and evaluation:
+
+```bash
+cd backend
+
+# Extract fields from all sample PDFs → output/results.jsonl
 python -m doc_parser.extract
-```
 
-**Extract from specific files:**
-```bash
-python -m doc_parser.extract samples/TX_Reyes.pdf samples/TX_Thornton.pdf
-```
+# Extract from specific files
+python -m doc_parser.extract samples/TX_Reyes.pdf
 
-**Options:**
-```
---page N       0-indexed page number for multi-page PDFs (default: 0)
---output PATH  Output JSONL file path (default: output/results.jsonl)
-```
-
-**Run evaluation against ground truth:**
-```bash
+# Run evaluation against ground truth
 python -m doc_parser.eval
+
+# Run pytest eval harness
+pytest tests/test_eval.py -v
 ```
-
-**Generate filled notification letters from extraction output:**
-```bash
-# Fill a single template (ssa, medicare, utility, telecom, bank)
-python -m doc_parser.generate \
-    --results output/results.jsonl \
-    --record 0 \
-    --template ssa \
-    --vars vars.json
-
-# Fill all five templates at once
-python -m doc_parser.generate \
-    --results output/results.jsonl \
-    --record 0 \
-    --all \
-    --vars vars.json
-```
-
-`vars.json` provides supplemental fields not found on the death certificate (sender info, account numbers, etc.):
-```json
-{
-  "sender_name": "Jane Doe",
-  "sender_address": "456 Elm St, Austin TX 78701",
-  "sender_phone": "(512) 555-1234",
-  "date": "March 17, 2026",
-  "forwarding_address": "456 Elm St, Austin TX 78701",
-  "account_number": "XXXXXX1234",
-  "medicare_beneficiary_id": "1EG4-TE5-MK72"
-}
-```
-
-Certificate fields (`deceased_full_name`, `date_of_death`, `filer_relationship`, etc.) are filled automatically from the extraction output. Any template slot that remains unresolved is left visible as `{{ slot_name }}` so you can see what still needs filling.
-
-Output files are written to `output/letters/<cert_stem>_<template>.txt`.
 
 ## Project Structure
 
 ```
-doc_parser/
-  extract.py    Core extraction logic, Pydantic output schema, CLI entry point
-  generate.py   Letter generator — fills notification templates from extracted data
-  eval.py       Evaluation harness — scores output against ground_truth.json
-  metrics.py    Cost projection and trial result logging
-  prompts.py    Prompt constants passed to the model
-templates/
-  death-notification-templates/
-    ssa.txt, medicare.txt, utility.txt, telecom.txt, bank.txt
-samples/
-  *.pdf                 Sample death certificates for testing
-  ground_truth.json     Expected field values for evaluation
-output/
-  results.jsonl         Extraction output (generated, not committed)
-  letters/              Filled letter output (generated, not committed)
+backend/
+  main.py                FastAPI app (API endpoints)
+  doc_parser/
+    extract.py           Extraction pipeline + Pydantic schema
+    generate.py          Letter rendering (Jinja2 templates → HTML/PDF/DOCX)
+    eval.py              Evaluation harness (ground truth scoring)
+    metrics.py           Cost projection + trial logging
+    prompts.py           Prompt constants
+  templates/             Jinja2 letter templates (15 institutions)
+  tests/test_eval.py     Pytest eval harness with fuzzy scoring
+  samples/               Test PDFs + ground_truth.json (gitignored)
+  output/                Generated results (gitignored)
+frontend/
+  src/App.jsx            Main application component
+  src/index.css          Tailwind theme config
+  vite.config.js         Vite config with API proxy
+  package.json           Dependencies
 ```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ANTHROPIC_API_KEY` | *(required)* | Anthropic API key |
+| `CORS_ORIGINS` | `http://localhost:5173` | Comma-separated allowed origins |
+| `EXTRACTION_MODEL` | `claude-sonnet-4-6` | Model for certificate extraction |
+| `VITE_BACKEND_URL` | `http://localhost:8000` | Backend URL for Vite dev proxy |
 
 ## Output Format
 
-Each line of `results.jsonl` is a JSON object with the following fields:
+Each line of `output/results.jsonl` is a JSON object:
 
 | Field | Type | Description |
 |---|---|---|

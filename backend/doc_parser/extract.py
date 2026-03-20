@@ -2,6 +2,7 @@
 
 import base64
 import json
+import os
 import time
 from pathlib import Path
 from typing import Literal, Optional
@@ -118,6 +119,9 @@ def _parse_json_response(text: str) -> dict:
 # Public API
 # ---------------------------------------------------------------------------
 
+_MODEL = os.environ.get("EXTRACTION_MODEL", "claude-sonnet-4-6")
+
+
 def parse_certificate(image_path: str, page: int = 0) -> dict:
     """Extract structured fields from a death certificate PDF or image.
 
@@ -137,7 +141,7 @@ def parse_certificate(image_path: str, page: int = 0) -> dict:
 
     try:
         response = client.messages.create(
-            model="claude-sonnet-4-6",
+            model=_MODEL,
             max_tokens=1024,
             messages=[{
                 "role": "user",
@@ -159,8 +163,6 @@ def parse_certificate(image_path: str, page: int = 0) -> dict:
 # ---------------------------------------------------------------------------
 # Metrics-aware extraction (used by eval harness)
 # ---------------------------------------------------------------------------
-
-_MODEL = "claude-sonnet-4-6"
 
 
 def _parse_certificate_with_metrics(image_path: str, page: int = 0) -> dict:

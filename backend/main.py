@@ -17,9 +17,11 @@ from doc_parser.generate import render_letter, render_to_docx_bytes, render_to_p
 
 app = FastAPI()
 
+_CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=_CORS_ORIGINS,
     allow_methods=["POST"],
     allow_headers=["*"],
 )

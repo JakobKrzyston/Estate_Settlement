@@ -2,15 +2,17 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+const backendUrl = process.env.VITE_BACKEND_URL || 'http://localhost:8000'
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/parse': 'http://localhost:8000',
-      '/generate': 'http://localhost:8000',
-      '/export-pdf': 'http://localhost:8000',
-      '/export-docx': 'http://localhost:8000',
+      '/parse': backendUrl,
+      '/generate': backendUrl,
+      '/export-pdf': backendUrl,
+      '/export-docx': backendUrl,
     },
   },
 })
