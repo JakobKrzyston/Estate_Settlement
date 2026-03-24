@@ -91,6 +91,37 @@ python -m doc_parser.eval
 pytest tests/test_eval.py -v
 ```
 
+## OCR Test Pipeline
+
+A separate test pipeline for measuring and improving OCR extraction accuracy using synthetic death certificate images. This does **not** modify the production extraction code.
+
+```bash
+cd backend
+
+# Generate synthetic test data (20 samples per template by default)
+python -m ocr_test.synth --count 20 --seed 42
+
+# Run OCR evaluation on all synthetic samples
+python -m ocr_test.evaluate
+
+# Evaluate a limited batch (controls API cost)
+python -m ocr_test.evaluate --limit 5
+
+# Re-run a single sample after prompt tuning
+python -m ocr_test.evaluate --sample us_death_cert_v1_0003_heavy
+
+# Re-run only previously failed/partial samples
+python -m ocr_test.evaluate --failures-only
+
+# Score from cached results without API calls
+python -m ocr_test.evaluate --results-only
+
+# Pytest harness
+pytest tests/test_ocr.py -v
+```
+
+See [backend/ocr_test/DATASET_GUIDE.md](backend/ocr_test/DATASET_GUIDE.md) for external dataset recommendations.
+
 ## Project Structure
 
 ```
@@ -102,9 +133,19 @@ backend/
     eval.py              Evaluation harness (ground truth scoring)
     metrics.py           Cost projection + trial logging
     prompts.py           Prompt constants
+  ocr_test/
+    synth.py             Synthetic certificate image generator
+    extract.py           24-field test extraction (separate from production)
+    score.py             Field-level scoring with fuzzy matching + diagnostics
+    evaluate.py          CLI evaluation runner with targeted re-testing
+    prompts.py           Test extraction prompt (all 24 fields)
+    DATASET_GUIDE.md     External dataset recommendations
   templates/             Jinja2 letter templates (15 institutions)
-  tests/test_eval.py     Pytest eval harness with fuzzy scoring
+  tests/
+    test_eval.py         Pytest eval harness (production pipeline)
+    test_ocr.py          Pytest eval harness (OCR test pipeline)
   samples/               Test PDFs + ground_truth.json (gitignored)
+  samples/synthetic/     Generated test images + manifest.json (gitignored)
   output/                Generated results (gitignored)
 frontend/
   src/App.jsx            Main application component
