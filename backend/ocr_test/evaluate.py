@@ -7,6 +7,7 @@ Usage:
     python -m ocr_test.evaluate --results-only           # score from cache, no API calls
     python -m ocr_test.evaluate --sample <id>            # re-run one sample
     python -m ocr_test.evaluate --failures-only          # re-run previously failed samples
+    python -m ocr_test.evaluate --report                 # write markdown report to default path
 """
 
 import argparse
@@ -20,6 +21,7 @@ from .extract import extract_with_metrics
 from .score import (
     format_batch_summary,
     format_failure_index,
+    format_markdown_report,
     format_sample_report,
     score_batch,
     score_sample,
@@ -28,6 +30,7 @@ from .score import (
 _SAMPLES_DIR = Path(__file__).parent.parent / "samples" / "synthetic"
 _RESULTS_PATH = Path(__file__).parent.parent / "output" / "synth_results.jsonl"
 _MANIFEST_PATH = _SAMPLES_DIR / "manifest.json"
+_REPORT_PATH = Path(__file__).parent.parent / "output" / "ocr_report.md"
 
 
 # ---------------------------------------------------------------------------
@@ -122,6 +125,9 @@ def main() -> None:
                     help="Re-run a single sample by sample_id")
     ap.add_argument("--failures-only", action="store_true",
                     help="Re-run only samples with previous failures")
+    ap.add_argument("--report", nargs="?", const=str(_REPORT_PATH), default=None,
+                    metavar="PATH",
+                    help="Write markdown report (default: output/ocr_report.md)")
     args = ap.parse_args()
 
     manifest_samples = _load_manifest()
@@ -199,6 +205,12 @@ def main() -> None:
     br = score_batch(sample_results)
     print(format_batch_summary(br))
     print(format_failure_index(sample_results))
+
+    if args.report:
+        report_path = Path(args.report)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(format_markdown_report(br))
+        print(f"\nMarkdown report written to: {report_path}", file=sys.stderr)
 
     # Log trial to metrics
     try:

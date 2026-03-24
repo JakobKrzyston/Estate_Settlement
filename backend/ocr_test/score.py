@@ -1,6 +1,7 @@
 """Scoring engine for OCR test results: field-level comparison with fuzzy matching and diagnostics."""
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Optional
 
 
@@ -338,4 +339,57 @@ def format_failure_index(sample_results: list[SampleResult]) -> str:
         lines.append(f"{sample_id:<40} {fr.field:<22} {exp:<25} {got:<25} {tag}")
 
     lines.append(f"\nTotal: {len(failures)} non-OK fields across {len(sample_results)} samples")
+    return "\n".join(lines)
+
+
+def format_markdown_report(br: BatchResult) -> str:
+    """Generate a markdown-formatted evaluation report from batch results.
+
+    Args:
+        br: Aggregate batch scoring result.
+
+    Returns:
+        Complete markdown string suitable for writing to a .md file.
+    """
+    total_fields = sum(d["total"] for d in br.by_field.values())
+    lines = [
+        "# OCR Evaluation Report",
+        "",
+        f"*Generated: {datetime.now().isoformat(timespec='seconds')}*",
+        "",
+        "## Overall Accuracy",
+        "",
+        f"**Weighted accuracy: {br.overall_accuracy:.1%}** "
+        f"(across {len(br.samples)} samples, {total_fields} field comparisons)",
+        "",
+        "## Accuracy by Degradation Level",
+        "",
+        "| Degradation | OK | Partial | Fail | Accuracy |",
+        "|---|--:|--:|--:|--:|",
+    ]
+    for name in sorted(br.by_degradation):
+        d = br.by_degradation[name]
+        lines.append(f"| {name} | {d['ok']} | {d['partial']} | {d['fail']} | {d['accuracy']:.1%} |")
+
+    lines += [
+        "",
+        "## Accuracy by Field (worst to best)",
+        "",
+        "| Field | OK | Partial | Fail | Accuracy |",
+        "|---|--:|--:|--:|--:|",
+    ]
+    for name in sorted(br.by_field, key=lambda n: br.by_field[n]["accuracy"]):
+        d = br.by_field[name]
+        lines.append(f"| {name} | {d['ok']} | {d['partial']} | {d['fail']} | {d['accuracy']:.1%} |")
+
+    failure_count = sum(
+        1 for sr in br.samples for fr in sr.fields if fr.status != "ok"
+    )
+    lines += [
+        "",
+        "## Failure Summary",
+        "",
+        f"**Total non-OK fields:** {failure_count} across {len(br.samples)} samples",
+        "",
+    ]
     return "\n".join(lines)

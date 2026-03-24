@@ -116,11 +116,74 @@ python -m ocr_test.evaluate --failures-only
 # Score from cached results without API calls
 python -m ocr_test.evaluate --results-only
 
+# Generate a markdown report after evaluation
+python -m ocr_test.evaluate --report
+
 # Pytest harness
 pytest tests/test_ocr.py -v
 ```
 
 See [backend/ocr_test/DATASET_GUIDE.md](backend/ocr_test/DATASET_GUIDE.md) for external dataset recommendations.
+
+### Evaluation Results
+
+Results below reflect a representative run on 40 synthetic certificates using `claude-sonnet-4-6`.
+
+> Sample images are generated locally via `python -m ocr_test.synth` and are not checked into git.
+> Re-run with `--report` to regenerate the full report at `backend/output/ocr_report.md`.
+
+#### Accuracy by Degradation
+
+| Degradation | Accuracy |
+|---|--:|
+| Light | 99.4% |
+| Medium | 94.9% |
+| Heavy | 74.3% |
+
+**Overall weighted accuracy: 90.3%** (960 field comparisons)
+
+#### Per-Field Accuracy
+
+| Field | Accuracy | | Field | Accuracy |
+|---|--:|---|---|--:|
+| ssn | 70.0% | | father_name | 95.0% |
+| residence_street | 73.8% | | age | 97.5% |
+| date_of_birth | 80.0% | | manner_of_death | 97.5% |
+| decedent_name | 83.8% | | sex | 97.5% |
+| date_of_death | 85.0% | | cause_a | 98.8% |
+| mother_name | 85.0% | | cause_b | 100.0% |
+| certifier_name | 90.0% | | marital_status | 100.0% |
+| place_of_death | 90.0% | | state_residence | 100.0% |
+
+#### Example: Light Degradation
+
+**Sample:** `us_death_cert_v1_0000_light`
+
+![Light degradation sample](backend/samples/synthetic/us_death_cert_v1_0000_light.png)
+
+| Field | Expected | Extracted | Status |
+|---|---|---|---|
+| decedent_name | James J. Davis | James J. Davis | OK |
+| ssn | 132-13-2535 | 132-13-2535 | OK |
+| certifier_name | Dr. Vladimir Mueller, MD | Dr. Vladimir Mueller, MD | OK |
+| cause_a | End-stage renal disease | End-stage renal disease | OK |
+
+**Result: 24/24 fields correct**
+
+#### Example: Heavy Degradation
+
+**Sample:** `us_death_cert_v1_0002_heavy`
+
+![Heavy degradation sample](backend/samples/synthetic/us_death_cert_v1_0002_heavy.png)
+
+| Field | Expected | Extracted | Status |
+|---|---|---|---|
+| decedent_name | Susan R. Nguyen | Joanna R. Nguyen | FAIL |
+| ssn | 144-35-1686 | 344-30-1686 | FAIL |
+| birthplace | Atlanta, Alaska | *(empty)* | FAIL |
+| certifier_name | Dr. Jennifer Boudreaux, MD | Dr. Jennifer Baudreaux, M.D. | PARTIAL (0.88) |
+
+**Result: 16/24 OK, 2 partial, 6 fail**
 
 ## Project Structure
 
