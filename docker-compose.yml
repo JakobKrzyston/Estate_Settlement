@@ -1,14 +1,22 @@
 services:
   backend:
     build: ./backend
+    restart: unless-stopped
     env_file: .env
     environment:
       - CORS_ORIGINS=http://localhost
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "80:80"
     depends_on:

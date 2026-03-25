@@ -17,12 +17,19 @@ from doc_parser.generate import render_letter, render_to_docx_bytes, render_to_p
 
 app = FastAPI()
 
+
+@app.get("/health")
+async def health() -> dict:
+    """Return service health status."""
+    return {"status": "ok"}
+
+
 _CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_CORS_ORIGINS,
-    allow_methods=["POST"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 

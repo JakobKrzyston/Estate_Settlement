@@ -6,3 +6,11 @@ output/
 metrics/
 .pytest_cache/
 .DS_Store
+.git/
+.env
+.env.*
+*.md
+tests/
+ocr_test/
+Dockerfile
+.dockerignore

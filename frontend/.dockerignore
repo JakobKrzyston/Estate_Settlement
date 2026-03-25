@@ -1,3 +1,10 @@
 node_modules/
 dist/
 .DS_Store
+.git/
+.env
+.env.*
+*.md
+Dockerfile
+.dockerignore
+eslint.config.js
