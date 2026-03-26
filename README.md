@@ -3,8 +3,8 @@
 Full-stack application that extracts structured fields from death certificate PDFs using Anthropic's vision API and generates notification letters for 15 institution types (SSA, Medicare, IRS, banks, insurance, utilities, and more).
 
 ## Demo 
-- PDF Extraction Time: 4 seconds
-- Cost: $0.04
+- PDF Extraction Time: 3 seconds
+- Cost: $0.01
 
 | Upload | Review Fields |
 |--------|---------------|
