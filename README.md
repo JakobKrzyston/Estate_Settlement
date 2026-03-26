@@ -34,16 +34,14 @@ Tips: clean browser (no bookmarks bar/extensions), 1280x800 or 1440x900, synthet
 |--------|---------------|
 | ![Upload screen](docs/screenshots/01-upload.png) | ![Review fields](docs/screenshots/02-review-fields.png) |
 
-| Select Institutions | Generated Letters |
+| Select Institutions | Institution Details |
 |---------------------|-------------------|
-| ![Select institutions](docs/screenshots/03-select-institutions.png) | ![Letter preview](docs/screenshots/04-letter-preview.png) |
+| ![Select institutions](docs/screenshots/03-select-institutions.png) | ![Select institutions](docs/screenshots/04-institution-details.png) |
 
-### Video Walkthrough
+| Generated Medicare Letter | Generated Amazon Letter |
+| ![Medicare preview](docs/screenshots/05-preview-medicare-letter.png) | ![Amazon preview](docs/screenshots/05-preview-amazon-letter.png)
 
-<!-- Replace LOOM_VIDEO_ID with your actual Loom video ID -->
-<a href="https://www.loom.com/share/LOOM_VIDEO_ID">
-  <img style="max-width:600px;" src="https://cdn.loom.com/sessions/thumbnails/LOOM_VIDEO_ID-with-play.gif" />
-</a>
+>
 
 ## Architecture
 
