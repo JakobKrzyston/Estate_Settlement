@@ -12,7 +12,7 @@ Full-stack application that extracts structured fields from death certificate PD
 
 | Select Institutions | Institution Details |
 |---------------------|-------------------|
-| ![Select institutions](docs/screenshots/03-select-institutions.png) | ![Select institutions](docs/screenshots/04-institution-details.png) |
+| ![Select institutions](docs/screenshots/03-select-institutions.png) | ![Institution Details](docs/screenshots/04-institution-details.png) |
 
 | Generated Medicare Letter | Generated Amazon Letter |
 |---------------------------|-------------------------|
