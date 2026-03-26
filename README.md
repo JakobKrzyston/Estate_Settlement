@@ -6,18 +6,29 @@ Full-stack application that extracts structured fields from death certificate PD
 - PDF Extraction Time: 3 seconds
 - Cost: $0.01
 
-| Upload | Review Fields |
-|--------|---------------|
-| ![Upload screen](docs/screenshots/01-upload.png) | ![Review fields](docs/screenshots/02-review-fields.png) |
+| Upload |
+|--------|
+| <img src="docs/screenshots/01-upload.png" alt="Upload screen" width="400" height="400"> |
 
-| Select Institutions | Institution Details |
-|---------------------|-------------------|
-| ![Select institutions](docs/screenshots/03-select-institutions.png) | ![Institution Details](docs/screenshots/04-institution-details.png) |
+| Review Fields |
+|---------------|
+| <img src="docs/screenshots/02-review-fields.png" alt="Review fields" width="400" height="600"> |
 
-| Generated Medicare Letter | Generated Amazon Letter |
-|---------------------------|-------------------------|
-| ![Medicare preview](docs/screenshots/05-preview-medicare-letter.png) | ![Amazon preview](docs/screenshots/06-preview-amazon-letter.png)
+| Select Institutions | 
+|---------------------|
+| <img src="docs/screenshots/03-select-institutions.png" alt="Select institutions" width="700" height="1000"> |
 
+| Institution Details |
+|---------------------|
+| <img src="docs/screenshots/04-institution-details.png" alt="Institution details" width="500" height="500"> |
+
+| Generated Medicare Letter |
+|---------------------------|
+| <img src="docs/screenshots/05-preview-medicare-letter.png" alt="Medicare preview" width="1000" height="1000"> |
+
+| Generated Amazon Letter |
+|---------------------------|
+| <img src="docs/screenshots/06-preview-amazon-letter.png" alt="Amazon preview" width="1000" height="1000"> |
 
 ## Architecture
 
