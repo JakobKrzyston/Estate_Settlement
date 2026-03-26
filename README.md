@@ -2,6 +2,47 @@
 
 Full-stack application that extracts structured fields from death certificate PDFs using Anthropic's vision API and generates notification letters for 15 institution types (SSA, Medicare, IRS, banks, insurance, utilities, and more).
 
+## Demo
+
+<!--
+SCREENSHOT CAPTURE INSTRUCTIONS (delete this block after adding screenshots):
+
+Create docs/screenshots/ directory (already exists). Use a browser at ~1280px width for consistency.
+Use a synthetic/test certificate — no real PII.
+
+1. 01-upload.png — The initial upload screen. Centered drag-and-drop card on gray background. No file selected.
+2. 02-review-fields.png — After uploading a certificate. Show extracted deceased + filer fields.
+   Ideally include at least one field with an amber warning icon (low confidence).
+3. 03-select-institutions.png — Left sidebar with several checkboxes checked across different groups.
+   Right panel showing a letter preview. Progress bar visible ("X letters · saving Y hours").
+4. 04-letter-preview.png — Accordion with 2-3 institutions. One expanded showing letter content.
+   "Download PDF" and "Download DOCX" buttons visible.
+
+LOOM VIDEO INSTRUCTIONS (delete this block after recording):
+
+Record 60-90 seconds showing the full flow:
+1. Upload a sample death certificate PDF
+2. Review the extracted fields — point out confidence indicators
+3. Select 3-4 institutions across different categories
+4. Fill in a supplemental field or two (e.g., bank account number)
+5. Expand a generated letter, click Download PDF
+
+Tips: clean browser (no bookmarks bar/extensions), 1280x800 or 1440x900, synthetic certificate only.
+-->
+
+| Upload | Review Fields |
+|--------|---------------|
+| ![Upload screen](docs/screenshots/01-upload.png) | ![Review fields](docs/screenshots/02-review-fields.png) |
+
+| Select Institutions | Institution Details |
+|---------------------|-------------------|
+| ![Select institutions](docs/screenshots/03-select-institutions.png) | ![Select institutions](docs/screenshots/04-institution-details.png) |
+
+| Generated Medicare Letter | Generated Amazon Letter |
+| ![Medicare preview](docs/screenshots/05-preview-medicare-letter.png) | ![Amazon preview](docs/screenshots/05-preview-amazon-letter.png)
+
+>
+
 ## Architecture
 
 - **Backend** — Python / FastAPI. Parses death certificate PDFs via Anthropic's vision API, renders notification letters from Jinja2 HTML templates, and exports to PDF or DOCX.
