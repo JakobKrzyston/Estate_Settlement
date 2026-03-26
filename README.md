@@ -6,29 +6,43 @@ Full-stack application that extracts structured fields from death certificate PD
 - PDF Extraction Time: 3 seconds
 - Cost: $0.01
 
-| Upload |
-|--------|
-| <img src="docs/screenshots/01-upload.png" alt="Upload screen" width="400" height="400"> |
+**Step 1 — Upload Death Certificate**
 
-| Review Fields |
-|---------------|
-| <img src="docs/screenshots/02-review-fields.png" alt="Review fields" width="400" height="600"> |
+<img src="docs/screenshots/01-upload.png" alt="Upload screen" width="500">
 
-| Select Institutions | 
-|---------------------|
-| <img src="docs/screenshots/03-select-institutions.png" alt="Select institutions" width="700" height="1000"> |
+---
 
-| Institution Details |
-|---------------------|
-| <img src="docs/screenshots/04-institution-details.png" alt="Institution details" width="500" height="500"> |
+**Step 2 — Review Extracted Fields**
 
-| Generated Medicare Letter |
-|---------------------------|
-| <img src="docs/screenshots/05-preview-medicare-letter.png" alt="Medicare preview" width="1000" height="1000"> |
+<img src="docs/screenshots/02-review-fields.png" alt="Review fields" width="500">
 
-| Generated Amazon Letter |
-|---------------------------|
-| <img src="docs/screenshots/06-preview-amazon-letter.png" alt="Amazon preview" width="1000" height="1000"> |
+---
+
+**Step 3 — Select Institutions**
+
+<img src="docs/screenshots/03-select-institutions.png" alt="Select institutions" width="800">
+
+---
+
+**Step 4 — Institution Details**
+
+<img src="docs/screenshots/04-institution-details.png" alt="Institution details" width="500">
+
+---
+
+**Step 5 — Generated Letters**
+
+
+<table>
+  <tr>
+    <td align="center"><b>Medicare Letter</b></td>
+    <td align="center"><b>Amazon Letter</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/05-preview-medicare-letter.png" alt="Medicare preview" width="500"></td>
+    <td><img src="docs/screenshots/06-preview-amazon-letter.png" alt="Amazon preview" width="500"></td>
+  </tr>
+</table>
 
 ## Architecture
 
